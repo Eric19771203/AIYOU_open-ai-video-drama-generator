@@ -164,8 +164,8 @@ export const NODE_DEPENDENCY_RULES: Record<NodeType, {
       NodeType.VIDEO_GENERATOR
     ],
     minInputs: 1,
-    maxInputs: 1,
-    description: '提取角色并生成角色档案'
+    maxInputs: 10, // Allow multiple inputs for character deduplication
+    description: '提取角色并生成角色档案（支持多输入去重）'
   },
 
   // 剧目分析 - 无输入,可输出到剧目精炼和剧本大纲

@@ -1203,14 +1203,25 @@ export const App = () => {
 
           } else if (node.type === NodeType.CHARACTER_NODE) {
               // --- Character Node Generation Logic ---
-              
+
               if (!node.data.extractedCharacterNames || node.data.extractedCharacterNames.length === 0) {
                   if (upstreamTexts.length > 0) {
-                      const content = upstreamTexts.join('\n');
-                      const names = await extractCharactersFromText(content);
-                      handleNodeUpdate(id, { extractedCharacterNames: names, characterConfigs: {} });
+                      // Extract character names from ALL connected inputs
+                      const allCharacterNames: string[] = [];
+
+                      for (const text of upstreamTexts) {
+                          const names = await extractCharactersFromText(text);
+                          allCharacterNames.push(...names);
+                      }
+
+                      // Deduplicate character names (case-insensitive)
+                      const uniqueNames = Array.from(new Set(allCharacterNames.map(name => name.trim()))).filter(name => name.length > 0);
+
+                      console.log('[CHARACTER_NODE] Extracted characters from', upstreamTexts.length, 'inputs:', uniqueNames);
+
+                      handleNodeUpdate(id, { extractedCharacterNames: uniqueNames, characterConfigs: {} });
                       setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.SUCCESS } : n));
-                      return; 
+                      return;
                   } else {
                       throw new Error("请先连接剧本大纲或剧本分集节点");
                   }

@@ -1399,3 +1399,176 @@ ${contentToExtract}
     }
 };
 
+// ============================================
+// Style Preset Generation
+// ============================================
+
+const SCENE_STYLE_INSTRUCTION = `你是一位Prompt工程专家，专门生成可复用的**场景风格描述词模板**。
+
+**核心任务**：
+生成一段通用的风格描述词，用作后续场景图像/视频生成的**风格前缀**。
+这段描述词不包含具体场景内容，只包含画风、渲染质量、色调、光影等抽象风格元素。
+
+**输出要求**：
+1. 纯风格描述，不包含具体物体、场景、构图
+2. 可以直接作为prompt前缀使用
+3. 长度：30-50个英文单词
+4. 使用逗号分隔关键词
+
+**必须包含的元素**：
+1. **核心风格标签**：
+   - REAL: photorealistic style, cinematic
+   - ANIME: anime style, anime background art
+   - 3D: 3d render, octane render
+
+2. **渲染质量**：
+   - REAL: 8k uhd, high resolution, professional photography
+   - ANIME: high quality, masterpiece, detailed illustration
+   - 3D: ray tracing, global illumination, 8k
+
+3. **光影风格**（抽象描述）：
+   - REAL: natural lighting, volumetric lighting, soft shadows
+   - ANIME: soft lighting, rim light, vibrant colors
+   - 3D: studio lighting, HDRI lighting, ambient occlusion
+
+4. **色调风格**：
+   - 暖色调：warm tone, golden palette
+   - 冷色调：cool tone, blue palette
+   - 中性：natural colors, balanced colors
+
+5. **画面质感**：
+   - REAL: sharp focus, depth of field, bokeh effect
+   - ANIME: cel shading, flat colors, clean lines
+   - 3D: PBR materials, realistic reflections
+
+**禁止包含**：
+❌ 具体场景：forest, street, room
+❌ 具体物体：tree, building, furniture
+❌ 构图角度：wide shot, close-up, from above
+❌ 具体光源：sunset, candlelight, neon lights
+
+**输出格式**：
+纯文本，逗号分隔，无换行，无markdown格式`;
+
+const CHARACTER_STYLE_INSTRUCTION = `你是一位Prompt工程专家，专门生成可复用的**人物风格描述词模板**。
+
+**核心任务**：
+生成一段通用的风格描述词，用作后续人物图像/视频生成的**风格前缀**。
+这段描述词不包含具体人物特征，只包含画风、渲染质量、人物绘制风格等抽象元素。
+
+**输出要求**：
+1. 纯风格描述，不包含具体外貌、服装、姿态
+2. 可以直接作为prompt前缀使用
+3. 长度：30-50个英文单词
+4. 使用逗号分隔关键词
+
+**必须包含的元素**：
+1. **核心风格标签**：
+   - REAL: photorealistic portrait, realistic human
+   - ANIME: anime character, anime style
+   - 3D: 3d character, 3d human model
+
+2. **渲染质量**：
+   - REAL: 8k uhd, professional portrait photography, high resolution
+   - ANIME: masterpiece, best quality, official art, detailed illustration
+   - 3D: high poly model, 8k, ray tracing, detailed textures
+
+3. **人物绘制质量**（抽象）：
+   - REAL: detailed facial features, realistic skin texture, professional lighting
+   - ANIME: beautiful detailed eyes, detailed character design, clean linework
+   - 3D: subsurface scattering, realistic skin shader, detailed topology
+
+4. **画面质感**：
+   - REAL: shallow depth of field, bokeh background, natural colors
+   - ANIME: vibrant colors, cel shading, clean rendering
+   - 3D: PBR materials, realistic hair shader, cloth simulation
+
+5. **光照风格**（适用于人物）：
+   - REAL: soft portrait lighting, natural light, rim light
+   - ANIME: soft shading, anime lighting, gentle highlights
+   - 3D: three-point lighting, studio setup, subsurface scattering
+
+**禁止包含**：
+❌ 具体外貌：long hair, blue eyes, fair skin
+❌ 具体服装：dress, suit, uniform
+❌ 具体姿态：standing, sitting, running
+❌ 具体表情：smiling, serious, sad
+❌ 具体年龄/性别：teenage girl, old man
+❌ 构图角度：portrait, full body, close-up
+
+**输出格式**：
+纯文本，逗号分隔，无换行，无markdown格式`;
+
+/**
+ * 生成风格提示词模板（场景或人物）
+ */
+export const generateStylePreset = async (
+    presetType: 'SCENE' | 'CHARACTER',
+    visualStyle: 'REAL' | 'ANIME' | '3D',
+    upstreamStyleInfo: {
+        artStyle?: string;
+        genre?: string;
+        setting?: string;
+    },
+    userInput?: string
+): Promise<{ stylePrompt: string; negativePrompt: string }> => {
+    const ai = getClient();
+
+    const isScene = presetType === 'SCENE';
+    const systemInstruction = isScene ? SCENE_STYLE_INSTRUCTION : CHARACTER_STYLE_INSTRUCTION;
+
+    const prompt = `请生成一段${isScene ? '场景' : '人物'}风格描述词模板。
+
+【上游视觉风格信息】
+画风分析：${upstreamStyleInfo.artStyle || '未提供'}
+类型：${upstreamStyleInfo.genre || '未提供'}
+设定：${upstreamStyleInfo.setting || '未提供'}
+
+【视觉风格类型】
+${visualStyle}
+
+【用户补充】
+${userInput || '无'}
+
+【要求】
+生成纯粹的风格描述词，不包含任何具体${isScene ? '场景、物体或构图' : '人物特征（外貌、服装、姿态、表情）'}。
+只包含：画风、${isScene ? '渲染' : '人物绘制'}质量、光影风格、${isScene ? '' : '渲染'}质感等抽象元素。
+这段描述词将作为前缀，用于后续所有${isScene ? '场景' : '人物'}图像生成。`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            config: {
+                systemInstruction,
+                temperature: 0.7
+            },
+            contents: { parts: [{ text: prompt }] }
+        });
+
+        let stylePrompt = response.text?.trim() || '';
+
+        // Remove markdown code blocks if present
+        stylePrompt = stylePrompt.replace(/```/g, '').replace(/^text\n/g, '').trim();
+
+        // Generate negative prompt based on type and style
+        const negativePrompts: Record<string, string> = {
+            'SCENE_REAL': 'people, characters, humans, anime, cartoon, painting, illustration, 3d render, low quality, blurry, watermark, signature',
+            'SCENE_ANIME': 'realistic, photo, 3d, low quality, blurry, monochrome, watermark',
+            'SCENE_3D': '2d, flat, anime, photo, painting, low poly, low quality, blurry',
+            'CHARACTER_REAL': 'anime, cartoon, illustration, 3d, cgi, bad anatomy, deformed, low quality, blurry, watermark',
+            'CHARACTER_ANIME': 'realistic, photo, 3d, bad anatomy, bad hands, extra limbs, low quality, blurry, nsfw',
+            'CHARACTER_3D': '2d, flat, anime, photo, painting, low poly, bad topology, low quality, blurry'
+        };
+
+        const negativeKey = `${presetType}_${visualStyle}`;
+        const negativePrompt = negativePrompts[negativeKey] || 'low quality, blurry, watermark';
+
+        console.log('[generateStylePreset] Generated:', { presetType, visualStyle, stylePrompt, negativePrompt });
+
+        return { stylePrompt, negativePrompt };
+    } catch (e) {
+        console.error('[generateStylePreset] Error:', e);
+        throw new Error('风格提示词生成失败，请重试');
+    }
+};
+

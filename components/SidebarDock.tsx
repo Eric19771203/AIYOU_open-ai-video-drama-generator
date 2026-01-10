@@ -5,7 +5,7 @@ import {
     Plus, RotateCcw, History, MessageSquare, FolderHeart, X,
     ImageIcon, Video as VideoIcon, Film, Save, FolderPlus,
     Edit, Trash2, Box, ScanFace, Brush, Type, Workflow as WorkflowIcon,
-    Clapperboard, Mic2, Settings, BookOpen, ScrollText, User, Search, Sparkles
+    Clapperboard, Mic2, Settings, BookOpen, ScrollText, User, Search, Sparkles, Palette
 } from 'lucide-react';
 import { NodeType, Workflow } from '../types';
 
@@ -59,6 +59,7 @@ const getNodeNameCN = (t: string) => {
         case NodeType.CHARACTER_NODE: return '角色设计';
         case NodeType.DRAMA_ANALYZER: return '剧目分析';
         case NodeType.DRAMA_REFINED: return '剧目精炼';
+        case NodeType.STYLE_PRESET: return '风格设定';
         default: return t;
     }
 };
@@ -77,6 +78,7 @@ const getNodeIcon = (t: string) => {
         case NodeType.CHARACTER_NODE: return User;
         case NodeType.DRAMA_ANALYZER: return Search;
         case NodeType.DRAMA_REFINED: return Sparkles;
+        case NodeType.STYLE_PRESET: return Palette;
         default: return Plus;
     }
 };
@@ -296,7 +298,7 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
                     </span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2 custom-scrollbar space-y-2">
-                    {[NodeType.PROMPT_INPUT, NodeType.IMAGE_GENERATOR, NodeType.VIDEO_GENERATOR, NodeType.AUDIO_GENERATOR, NodeType.SCRIPT_PLANNER, NodeType.SCRIPT_EPISODE, NodeType.CHARACTER_NODE, NodeType.STORYBOARD_GENERATOR, NodeType.DRAMA_ANALYZER, NodeType.VIDEO_ANALYZER, NodeType.IMAGE_EDITOR].map(t => {
+                    {[NodeType.PROMPT_INPUT, NodeType.IMAGE_GENERATOR, NodeType.VIDEO_GENERATOR, NodeType.AUDIO_GENERATOR, NodeType.SCRIPT_PLANNER, NodeType.SCRIPT_EPISODE, NodeType.CHARACTER_NODE, NodeType.STYLE_PRESET, NodeType.STORYBOARD_GENERATOR, NodeType.DRAMA_ANALYZER, NodeType.VIDEO_ANALYZER, NodeType.IMAGE_EDITOR].map(t => {
                         const ItemIcon = getNodeIcon(t);
                         return (
                             <button 

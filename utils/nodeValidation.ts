@@ -193,6 +193,22 @@ export const NODE_DEPENDENCY_RULES: Record<NodeType, {
     minInputs: 1,
     maxInputs: 1,
     description: '提取精炼标签,作为剧本创作的辅助信息'
+  },
+
+  // 风格设定 - 全局节点,可接收多个上游,输出到所有媒体生成节点
+  [NodeType.STYLE_PRESET]: {
+    allowedInputs: [
+      NodeType.DRAMA_ANALYZER,
+      NodeType.SCRIPT_PLANNER,
+      NodeType.DRAMA_REFINED
+    ],
+    allowedOutputs: [
+      NodeType.IMAGE_GENERATOR,
+      NodeType.VIDEO_GENERATOR
+    ],
+    minInputs: 0,
+    maxInputs: 10,
+    description: '生成可复用的场景/人物风格描述词模板'
   }
 };
 

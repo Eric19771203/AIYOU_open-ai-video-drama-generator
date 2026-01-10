@@ -1298,6 +1298,53 @@ export const App = () => {
               }
               handleNodeUpdate(id, { generatedCharacters: newGeneratedChars });
 
+          } else if (node.type === NodeType.STYLE_PRESET) {
+              // --- Style Preset Generation Logic ---
+
+              // Extract upstream style information
+              let artStyle = '';
+              let visualStyle: 'REAL' | 'ANIME' | '3D' = 'ANIME';
+              let genre = '';
+              let setting = '';
+
+              // Merge from all upstream nodes
+              for (const input of inputs) {
+                  if (input.type === NodeType.DRAMA_ANALYZER && input.data.artStyle) {
+                      artStyle = input.data.artStyle;
+                  }
+                  if (input.type === NodeType.SCRIPT_PLANNER) {
+                      if (input.data.scriptVisualStyle) visualStyle = input.data.scriptVisualStyle;
+                      if (input.data.scriptGenre) genre = input.data.scriptGenre;
+                      if (input.data.scriptSetting) setting = input.data.scriptSetting;
+                  }
+                  if (input.type === NodeType.DRAMA_REFINED && input.data.refinedContent) {
+                      // Extract from refined content if available
+                      const refined = input.data.refinedContent;
+                      if (refined.artStyle && refined.artStyle.length > 0) {
+                          artStyle = refined.artStyle.join(', ');
+                      }
+                  }
+              }
+
+              // Get user configuration
+              const presetType = node.data.stylePresetType || 'SCENE'; // 'SCENE' or 'CHARACTER'
+              const userInput = node.data.styleUserInput || '';
+
+              // Generate style preset
+              const { generateStylePreset } = await import('./services/geminiService');
+              const result = await generateStylePreset(
+                  presetType,
+                  visualStyle,
+                  { artStyle, genre, setting },
+                  userInput
+              );
+
+              handleNodeUpdate(id, {
+                  stylePrompt: result.stylePrompt,
+                  negativePrompt: result.negativePrompt,
+                  visualStyle // Store for reference
+              });
+
           } else if (node.type === NodeType.SCRIPT_PLANNER) {
               // 检查是否有连接的 DRAMA_REFINED 节点
               const refinedNode = inputs.find(n => n.type === NodeType.DRAMA_REFINED);

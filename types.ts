@@ -12,6 +12,7 @@ export enum NodeType {
   CHARACTER_NODE = 'CHARACTER_NODE',
   DRAMA_ANALYZER = 'DRAMA_ANALYZER',
   DRAMA_REFINED = 'DRAMA_REFINED',
+  STYLE_PRESET = 'STYLE_PRESET',
 }
 
 export enum NodeStatus {

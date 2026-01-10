@@ -12,7 +12,8 @@ import {
   User,
   BookOpen,
   Film,
-  Sparkles
+  Sparkles,
+  Palette
 } from 'lucide-react';
 
 /**
@@ -35,7 +36,8 @@ export function getNodeIcon(type: NodeType) {
     [NodeType.STORYBOARD_GENERATOR]: Clapperboard,
     [NodeType.CHARACTER_NODE]: User,
     [NodeType.DRAMA_ANALYZER]: Film,
-    [NodeType.DRAMA_REFINED]: Sparkles
+    [NodeType.DRAMA_REFINED]: Sparkles,
+    [NodeType.STYLE_PRESET]: Palette
   };
 
   return icons[type] || Type;
@@ -57,7 +59,8 @@ export function getNodeColor(type: NodeType): string {
     [NodeType.STORYBOARD_GENERATOR]: '#a855f7',
     [NodeType.CHARACTER_NODE]: '#f97316',
     [NodeType.DRAMA_ANALYZER]: '#7c3aed',
-    [NodeType.DRAMA_REFINED]: '#06b6d4'
+    [NodeType.DRAMA_REFINED]: '#06b6d4',
+    [NodeType.STYLE_PRESET]: '#a855f7'
   };
 
   return colors[type] || '#6366f1';
@@ -82,7 +85,8 @@ export function getApproxNodeHeight(node: AppNode): number {
     [NodeType.STORYBOARD_GENERATOR]: 500,
     [NodeType.CHARACTER_NODE]: 520,
     [NodeType.DRAMA_ANALYZER]: 600,
-    [NodeType.DRAMA_REFINED]: 400
+    [NodeType.DRAMA_REFINED]: 400,
+    [NodeType.STYLE_PRESET]: 420
   };
 
   let height = baseHeights[node.type] || 360;

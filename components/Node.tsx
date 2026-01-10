@@ -1,6 +1,6 @@
 
 import { AppNode, NodeStatus, NodeType, StoryboardShot, CharacterProfile } from '../types';
-import { RefreshCw, Play, Image as ImageIcon, Video as VideoIcon, Type, AlertCircle, CheckCircle, Plus, Maximize2, Download, MoreHorizontal, Wand2, Scaling, FileSearch, Edit, Loader2, Layers, Trash2, X, Upload, Scissors, Film, MousePointerClick, Crop as CropIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, GripHorizontal, Link, Copy, Monitor, Music, Pause, Volume2, Mic2, BookOpen, ScrollText, Clapperboard, LayoutGrid, Box, User, Users, Save, RotateCcw, Eye, List, Sparkles, ZoomIn, ZoomOut, Minus, Circle, Square, Maximize, Move, RotateCw, TrendingUp, TrendingDown, ArrowRight, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { RefreshCw, Play, Image as ImageIcon, Video as VideoIcon, Type, AlertCircle, CheckCircle, Plus, Maximize2, Download, MoreHorizontal, Wand2, Scaling, FileSearch, Edit, Loader2, Layers, Trash2, X, Upload, Scissors, Film, MousePointerClick, Crop as CropIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, GripHorizontal, Link, Copy, Monitor, Music, Pause, Volume2, Mic2, BookOpen, ScrollText, Clapperboard, LayoutGrid, Box, User, Users, Save, RotateCcw, Eye, List, Sparkles, ZoomIn, ZoomOut, Minus, Circle, Square, Maximize, Move, RotateCw, TrendingUp, TrendingDown, ArrowRight, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight, Palette } from 'lucide-react';
 import { VideoModeSelector, SceneDirectorOverlay } from './VideoNodeModules';
 import React, { memo, useRef, useState, useEffect, useCallback } from 'react';
 
@@ -1216,6 +1216,87 @@ const NodeComponent: React.FC<NodeProps> = ({
           );
       }
 
+      // --- STYLE PRESET NODE CONTENT ---
+      if (node.type === NodeType.STYLE_PRESET) {
+          const stylePrompt = node.data.stylePrompt || '';
+          const negativePrompt = node.data.negativePrompt || '';
+          const visualStyle = node.data.visualStyle || 'ANIME';
+          const characterCount = stylePrompt.length;
+
+          return (
+              <div className="w-full h-full flex flex-col overflow-hidden relative">
+                  {/* Top: Generated Style Prompt */}
+                  <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-3">
+                      {!stylePrompt && !isWorking ? (
+                          <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-2">
+                              <Palette size={32} className="opacity-50" />
+                              <span className="text-xs">等待生成风格提示词...</span>
+                              <span className="text-[10px]">配置参数后点击生成</span>
+                          </div>
+                      ) : (
+                          <>
+                              {/* Style Prompt Display */}
+                              <div className="bg-black/20 border border-white/5 rounded-xl p-3 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                          <Palette size={14} className="text-purple-400" />
+                                          <span className="text-xs text-slate-300 font-bold">风格提示词</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                          <span className={`text-[9px] px-2 py-0.5 rounded-full ${
+                                              visualStyle === 'REAL' ? 'bg-blue-500/20 text-blue-300' :
+                                              visualStyle === 'ANIME' ? 'bg-pink-500/20 text-pink-300' :
+                                              'bg-green-500/20 text-green-300'
+                                          }`}>{visualStyle}</span>
+                                          <span className="text-[9px] text-slate-500">{characterCount} 字符</span>
+                                          {stylePrompt && (
+                                              <button
+                                                  onClick={() => navigator.clipboard.writeText(stylePrompt)}
+                                                  className="p-1 rounded hover:bg-white/10 transition-colors"
+                                                  title="复制"
+                                              >
+                                                  <Copy size={10} className="text-slate-400" />
+                                              </button>
+                                          )}
+                                      </div>
+                                  </div>
+                                  <textarea
+                                      className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-[10px] text-slate-300 font-mono leading-relaxed resize-none h-32 custom-scrollbar"
+                                      placeholder="生成的风格提示词将显示在这里..."
+                                      value={stylePrompt}
+                                      onChange={(e) => onUpdate(node.id, { stylePrompt: e.target.value })}
+                                      onMouseDown={e => e.stopPropagation()}
+                                      spellCheck={false}
+                                  />
+                              </div>
+
+                              {/* Negative Prompt Display (Collapsible) */}
+                              {negativePrompt && (
+                                  <details className="bg-black/10 border border-white/5 rounded-xl overflow-hidden">
+                                      <summary className="px-3 py-2 cursor-pointer hover:bg-white/5 transition-colors flex items-center justify-between text-[10px] text-slate-400">
+                                          <span>负面提示词 (Negative Prompt)</span>
+                                          <ChevronDown size={12} />
+                                      </summary>
+                                      <div className="p-3 pt-0">
+                                          <div className="bg-black/40 border border-white/10 rounded-lg p-2">
+                                              <div className="text-[9px] text-slate-400 font-mono leading-relaxed">{negativePrompt}</div>
+                                          </div>
+                                      </div>
+                                  </details>
+                              )}
+                          </>
+                      )}
+                  </div>
+
+                  {isWorking && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
+                          <Loader2 className="animate-spin text-purple-400" />
+                      </div>
+                  )}
+              </div>
+          );
+      }
+
       if (node.type === NodeType.VIDEO_ANALYZER) {
           return (
             <div className="w-full h-full p-5 flex flex-col gap-3">
@@ -1566,6 +1647,77 @@ const NodeComponent: React.FC<NodeProps> = ({
                              提取精炼信息（已选择 {selectedFields.length} 项）
                          </button>
                      )}
+                 </div>
+             </div>
+         );
+     }
+
+     // Special handling for STYLE_PRESET
+     if (node.type === NodeType.STYLE_PRESET) {
+         return (
+             <div className={`absolute top-full left-1/2 -translate-x-1/2 w-[98%] pt-2 z-50 flex flex-col items-center justify-start transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-[-10px] scale-95 pointer-events-none'}`}>
+                 <div className={`w-full rounded-[20px] p-3 flex flex-col gap-3 ${GLASS_PANEL} relative z-[100]`} onMouseDown={e => e.stopPropagation()} onWheel={(e) => e.stopPropagation()}>
+                     {/* Preset Type Selector */}
+                     <div className="flex flex-col gap-2">
+                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                             <Palette size={12} className="text-purple-400" />
+                             <span>应用范围</span>
+                         </div>
+                         <div className="flex gap-2">
+                             {[
+                                 { value: 'SCENE', label: '场景 (Scene)', icon: LayoutGrid },
+                                 { value: 'CHARACTER', label: '人物 (Character)', icon: User }
+                             ].map(({ value, label, icon: Icon }) => (
+                                 <button
+                                     key={value}
+                                     onClick={() => onUpdate(node.id, { stylePresetType: value })}
+                                     className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-[10px] font-bold transition-all ${
+                                         (node.data.stylePresetType || 'SCENE') === value
+                                             ? 'bg-purple-500/20 border border-purple-500/50 text-purple-300'
+                                             : 'bg-black/20 border border-white/10 text-slate-400 hover:bg-white/5'
+                                     }`}
+                                 >
+                                     <Icon size={14} />
+                                     <span>{label}</span>
+                                 </button>
+                             ))}
+                         </div>
+                     </div>
+
+                     {/* User Input */}
+                     <div className="flex flex-col gap-2">
+                         <label className="text-[10px] text-slate-400">补充描述</label>
+                         <textarea
+                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50 resize-none h-20"
+                             placeholder="输入额外的风格描述，如：赛博朋克风格、温馨治愈系...&#10;或人物特征：银发少女、机甲战士、古装书生..."
+                             value={node.data.styleUserInput || ''}
+                             onChange={(e) => onUpdate(node.id, { styleUserInput: e.target.value })}
+                             onMouseDown={e => e.stopPropagation()}
+                         />
+                     </div>
+
+                     {/* Generate Button */}
+                     <button
+                         onClick={handleActionClick}
+                         disabled={isWorking}
+                         className={`w-full px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                             isWorking
+                                 ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                                 : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:shadow-lg hover:shadow-purple-500/20'
+                         }`}
+                     >
+                         {isWorking ? (
+                             <>
+                                 <Loader2 className="animate-spin" size={14} />
+                                 <span>生成中...</span>
+                             </>
+                         ) : (
+                             <>
+                                 <Palette size={14} />
+                                 <span>🎨 生成风格提示词</span>
+                             </>
+                         )}
+                     </button>
                  </div>
              </div>
          );

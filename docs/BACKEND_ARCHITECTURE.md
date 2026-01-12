@@ -548,9 +548,544 @@ export class TaskQueueService {
 
 ---
 
-## 七、前端改造
+## 七、API密钥配置管理
 
-### 7.1 API客户端封装
+### 7.1 设计原则
+
+1. **用户控制**：API密钥由用户在设置界面配置
+2. **后端存储**：密钥存储在后端，前端不直接接触
+3. **安全传输**：密钥通过HTTPS加密传输
+4. **加密存储**：密钥在数据库中加密存储
+5. **按需使用**：后端在调用AI API时动态加载密钥
+
+### 7.2 配置流程
+
+```
+┌─────────────┐      设置界面       ┌─────────────┐
+│   用户      │ ─────────────────→ │  前端React   │
+└─────────────┘                     └──────┬──────┘
+                                          │
+                                          │ POST /api/config
+                                          │ { geminiApiKey: "xxx" }
+                                          ↓
+┌──────────────────────────────────────────────────────┐
+│                   后端服务器                             │
+│                                                      │
+│  ┌──────────────┐      验证      ┌──────────────┐   │
+│  │ Config API   │ ─────────────→ │  中间件      │   │
+│  └──────┬───────┘               └──────┬───────┘   │
+│         │                              │             │
+│         │  格式检查                     │ 加密        │
+│         ↓                              ↓             │
+│  ┌──────────────┐              ┌──────────────┐   │
+│  │ 配置管理器   │ ───────────→ │  加密服务    │   │
+│  └──────┬───────┘              └──────┬───────┘   │
+│         │                              │             │
+│         │ 保存到数据库                  │             │
+│         ↓                              │             │
+│  ┌──────────────────────────────────────┐         │
+│  │  SQLite Database (加密存储)          │         │
+│  │  ┌────────────────────────────┐     │         │
+│  │  | api_configs                |     │         │
+│  │  | - provider: "gemini"       |     │         │
+│  │  | - key: (AES-256加密)       |     │         │
+│  │  | - updated_at: timestamp    |     │         │
+│  │  └────────────────────────────┘     │         │
+│  └──────────────────────────────────────┘         │
+│                                                      │
+│  ┌──────────────┐      调用AI时      ┌──────────────┐│
+│  │ Gemini服务   │ ───────────────→ │ 密钥加载器   ││
+│  └──────────────┘                  └──────┬───────┘│
+│                                             │        │
+│                                             │ 解密    │
+│                                             ↓        │
+│                                      ┌──────────────┐
+│                                      │ API Key      │
+│                                      └──────────────┘
+└──────────────────────────────────────────────────────┘
+```
+
+### 7.3 数据库设计
+
+```sql
+-- API配置表
+CREATE TABLE api_configs (
+  id TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,        -- 'gemini', 'claude', 'openai'等
+  key_encrypted TEXT NOT NULL,   -- AES-256加密后的密钥
+  key_hash TEXT NOT NULL,         -- 密钥哈希值（用于验证）
+  is_active BOOLEAN DEFAULT 1,    -- 是否启用
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 配置验证索引
+CREATE UNIQUE INDEX idx_provider_active ON api_configs(provider) WHERE is_active = 1;
+```
+
+### 7.4 后端实现
+
+#### 7.4.1 配置管理服务
+
+```typescript
+// src/services/config/config-manager.service.ts
+import { encrypt, decrypt } from '../utils/encryption';
+
+export interface APIConfig {
+  provider: string;
+  apiKey: string;
+}
+
+export class ConfigManagerService {
+  private encryptionKey: Buffer;
+
+  constructor() {
+    // 从环境变量或安全存储中获取加密密钥
+    this.encryptionKey = this.getOrCreateEncryptionKey();
+  }
+
+  // 保存API配置
+  async saveConfig(config: APIConfig): Promise<void> {
+    // 1. 验证密钥格式
+    this.validateApiKey(config.provider, config.apiKey);
+
+    // 2. 加密密钥
+    const encryptedKey = encrypt(config.apiKey, this.encryptionKey);
+
+    // 3. 生成哈希用于验证
+    const keyHash = this.hashKey(config.apiKey);
+
+    // 4. 保存到数据库
+    await db.run(`
+      INSERT OR REPLACE INTO api_configs
+      (id, provider, key_encrypted, key_hash, is_active, updated_at)
+      VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+    `, [
+      `${config.provider}_active`,
+      config.provider,
+      encryptedKey,
+      keyHash
+    ]);
+
+    // 5. 更新内存中的配置
+    this.loadConfigToMemory(config);
+  }
+
+  // 获取API密钥（供AI服务使用）
+  async getApiKey(provider: string): Promise<string> {
+    // 1. 先从内存缓存中查找
+    const cached = this.memoryCache.get(provider);
+    if (cached) {
+      return cached;
+    }
+
+    // 2. 从数据库加载
+    const row = await db.get(
+      'SELECT key_encrypted FROM api_configs WHERE provider = ? AND is_active = 1',
+      [provider]
+    );
+
+    if (!row) {
+      throw new Error(`No API key found for provider: ${provider}`);
+    }
+
+    // 3. 解密密钥
+    const decryptedKey = decrypt(row.key_encrypted, this.encryptionKey);
+
+    // 4. 缓存到内存
+    this.memoryCache.set(provider, decryptedKey);
+
+    return decryptedKey;
+  }
+
+  // 删除API配置
+  async deleteConfig(provider: string): Promise<void> {
+    await db.run(
+      'DELETE FROM api_configs WHERE provider = ?',
+      [provider]
+    );
+    this.memoryCache.delete(provider);
+  }
+
+  // 验证API密钥格式
+  private validateApiKey(provider: string, apiKey: string): void {
+    switch (provider) {
+      case 'gemini':
+        if (!apiKey.startsWith('AIza')) {
+          throw new Error('Invalid Gemini API key format');
+        }
+        break;
+      case 'openai':
+        if (!apiKey.startsWith('sk-')) {
+          throw new Error('Invalid OpenAI API key format');
+        }
+        break;
+      // ... 其他provider验证
+    }
+  }
+
+  private memoryCache: Map<string, string> = new Map();
+}
+```
+
+#### 7.4.2 加密工具
+
+```typescript
+// src/utils/encryption.ts
+import crypto from 'crypto';
+
+const ALGORITHM = 'aes-256-gcm';
+const KEY_LENGTH = 32;
+const IV_LENGTH = 16;
+const SALT_LENGTH = 64;
+const TAG_LENGTH = 16;
+
+// 生成或获取加密密钥
+export function getOrCreateEncryptionKey(): Buffer {
+  let key = process.env.ENCRYPTION_KEY;
+
+  if (!key) {
+    // 开发环境：生成临时密钥
+    key = crypto.randomBytes(KEY_LENGTH).toString('hex');
+    console.warn('Using temporary encryption key. Set ENCRYPTION_KEY env var for production.');
+  }
+
+  return Buffer.from(key, 'hex');
+}
+
+// 加密
+export function encrypt(text: string, key: Buffer): string {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const salt = crypto.randomBytes(SALT_LENGTH);
+
+  const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256');
+
+  const cipher = crypto.createCipheriv(ALGORITHM, derivedKey, iv);
+
+  let encrypted = cipher.update(text, 'utf8', 'hex');
+  encrypted += cipher.final('hex');
+
+  const authTag = cipher.getAuthTag();
+
+  // 组合: salt + iv + authTag + encrypted
+  return salt.toString('hex') + ':' +
+         iv.toString('hex') + ':' +
+         authTag.toString('hex') + ':' +
+         encrypted;
+}
+
+// 解密
+export function decrypt(encryptedText: string, key: Buffer): string {
+  const parts = encryptedText.split(':');
+  const salt = Buffer.from(parts[0], 'hex');
+  const iv = Buffer.from(parts[1], 'hex');
+  const authTag = Buffer.from(parts[2], 'hex');
+  const encrypted = parts[3];
+
+  const derivedKey = crypto.pbkdf2Sync(key, salt, 100000, KEY_LENGTH, 'sha256');
+
+  const decipher = crypto.createDecipheriv(ALGORITHM, derivedKey, iv);
+  decipher.setAuthTag(authTag);
+
+  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+  decrypted += decipher.final('utf8');
+
+  return decrypted;
+}
+```
+
+#### 7.4.3 配置API路由
+
+```typescript
+// src/routes/config.routes.ts
+import express from 'express';
+import { ConfigManagerService } from '../services/config/config-manager.service';
+
+const router = express.Router();
+const configManager = new ConfigManagerService();
+
+// 获取当前配置（不返回敏感信息）
+router.get('/', async (req, res) => {
+  try {
+    const configs = await db.all(`
+      SELECT provider, is_active, created_at, updated_at
+      FROM api_configs
+    `);
+
+    res.json({
+      success: true,
+      data: configs
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 更新API配置
+router.put('/', async (req, res) => {
+  try {
+    const { provider, apiKey } = req.body;
+
+    // 验证输入
+    if (!provider || !apiKey) {
+      return res.status(400).json({
+        success: false,
+        error: 'provider and apiKey are required'
+      });
+    }
+
+    // 保存配置
+    await configManager.saveConfig({ provider, apiKey });
+
+    res.json({
+      success: true,
+      message: 'Configuration updated successfully'
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 删除API配置
+router.delete('/:provider', async (req, res) => {
+  try {
+    const { provider } = req.params;
+
+    await configManager.deleteConfig(provider);
+
+    res.json({
+      success: true,
+      message: 'Configuration deleted successfully'
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 验证API密钥（可选）
+router.post('/validate', async (req, res) => {
+  try {
+    const { provider, apiKey } = req.body;
+
+    // 调用简单的API来验证密钥
+    const isValid = await configManager.validateApiKey(provider, apiKey);
+
+    res.json({
+      success: true,
+      valid: isValid
+    });
+  } catch (error: any) {
+    res.json({
+      success: true,
+      valid: false,
+      error: error.message
+    });
+  }
+});
+
+export default router;
+```
+
+### 7.5 AI服务集成
+
+```typescript
+// src/services/ai/gemini.service.ts
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { ConfigManagerService } from '../config/config-manager.service';
+
+export class GeminiService {
+  private configManager: ConfigManagerService;
+  private client: GoogleGenerativeAI | null = null;
+
+  constructor() {
+    this.configManager = new ConfigManagerService();
+  }
+
+  // 懒加载：在需要时初始化客户端
+  private async getClient(): Promise<GoogleGenerativeAI> {
+    if (this.client) {
+      return this.client;
+    }
+
+    // 从配置管理器获取API密钥
+    const apiKey = await this.configManager.getApiKey('gemini');
+
+    // 初始化客户端
+    this.client = new GoogleGenerativeAI(apiKey);
+
+    return this.client;
+  }
+
+  async generateImage(prompt: string, options: any): Promise<string[]> {
+    const ai = await this.getClient();
+    // ... 使用ai进行生成
+  }
+
+  async generateText(prompt: string, options: any): Promise<string> {
+    const ai = await this.getClient();
+    // ... 使用ai进行生成
+  }
+}
+```
+
+### 7.6 前端设置界面
+
+```typescript
+// src/components/SettingsPanel.tsx
+export function SettingsPanel() {
+  const [configs, setConfigs] = useState<APIConfig[]>([]);
+  const [geminiKey, setGeminiKey] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // 加载现有配置
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      const response = await apiClient.getAPIConfigs();
+      setConfigs(response.data);
+    };
+    fetchConfigs();
+  }, []);
+
+  // 保存配置
+  const handleSaveConfig = async (provider: string, apiKey: string) => {
+    setIsSaving(true);
+    try {
+      await apiClient.updateAPIConfig({ provider, apiKey });
+
+      // 重新加载配置
+      const response = await apiClient.getAPIConfigs();
+      setConfigs(response.data);
+
+      toast.success('API密钥已保存');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="settings-panel">
+      <h2>API配置</h2>
+
+      <div className="config-section">
+        <h3>Google Gemini API</h3>
+        <input
+          type="password"
+          placeholder="输入API密钥"
+          value={geminiKey}
+          onChange={(e) => setGeminiKey(e.target.value)}
+        />
+        <button
+          onClick={() => handleSaveConfig('gemini', geminiKey)}
+          disabled={isSaving || !geminiKey}
+        >
+          {isSaving ? '保存中...' : '保存'}
+        </button>
+
+        {configs.find(c => c.provider === 'gemini')?.is_active && (
+          <p className="success">✓ 已配置</p>
+        )}
+      </div>
+
+      {/* 其他provider的配置... */}
+    </div>
+  );
+}
+```
+
+### 7.7 API客户端扩展
+
+```typescript
+// src/lib/api-client.ts
+class APIClient {
+  // ... 其他方法
+
+  // 获取API配置列表
+  async getAPIConfigs() {
+    return this.request<{ success: boolean; data: APIConfig[] }>('/config');
+  }
+
+  // 更新API配置
+  async updateAPIConfig(config: { provider: string; apiKey: string }) {
+    return this.request('/config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+  }
+
+  // 删除API配置
+  async deleteAPIConfig(provider: string) {
+    return this.request(`/config/${provider}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // 验证API密钥
+  async validateAPIKey(provider: string, apiKey: string) {
+    return this.request('/config/validate', {
+      method: 'POST',
+      body: JSON.stringify({ provider, apiKey }),
+    });
+  }
+}
+```
+
+### 7.8 安全考虑
+
+1. **传输加密**
+   - 使用HTTPS协议传输API密钥
+   - 开发环境允许HTTP，生产环境强制HTTPS
+
+2. **存储加密**
+   - 使用AES-256-GCM加密密钥
+   - 加密密钥通过环境变量配置，不提交到代码仓库
+
+3. **访问控制**
+   - 后端服务仅监听本地地址（127.0.0.1）
+   - 防止外部网络直接访问配置API
+
+4. **密钥验证**
+   - 保存前验证密钥格式
+   - 提供密钥验证接口
+   - 记录密钥更新日志
+
+5. **密钥轮换**
+   - 支持随时更换API密钥
+   - 新密钥立即生效
+   - 旧密钥自动失效
+
+### 7.9 用户体验
+
+1. **配置提示**
+   - 首次使用时引导用户配置API密钥
+   - 提供API密钥获取链接
+   - 显示配置状态（已配置/未配置）
+
+2. **安全提示**
+   - 提示用户API密钥将加密存储
+   - 密钥仅用于AI API调用
+   - 不会上传到云端
+
+3. **错误处理**
+   - API调用失败时提示检查密钥配置
+   - 提供密钥重新配置入口
+   - 显示详细的错误信息
+
+---
+
+## 八、前端改造
+
+### 8.1 API客户端封装
 
 ```typescript
 // src/lib/api-client.ts
@@ -687,7 +1222,7 @@ export function useWorkspace(workspaceId: string) {
 
 ---
 
-## 八、实施路线图
+## 九、实施路线图
 
 ### Phase 1: 基础设施搭建（1-2周）
 
@@ -729,7 +1264,7 @@ export function useWorkspace(workspaceId: string) {
 
 ---
 
-## 九、优势与收益
+## 十、优势与收益
 
 ### 9.1 架构优势
 
@@ -780,7 +1315,7 @@ export function useWorkspace(workspaceId: string) {
 
 ---
 
-## 十、风险与挑战
+## 十一、风险与挑战
 
 ### 10.1 技术风险
 
@@ -801,7 +1336,7 @@ export function useWorkspace(workspaceId: string) {
 
 ---
 
-## 十一、后续优化方向
+## 十二、后续优化方向
 
 ### 11.1 短期优化（1-3个月）
 
@@ -839,7 +1374,7 @@ export function useWorkspace(workspaceId: string) {
 
 ---
 
-## 十二、总结
+## 十三、总结
 
 本架构规划将现有前端应用重构为前后端分离架构，通过本地服务器统一管理AI调用和数据持久化。主要优势包括：
 

@@ -750,14 +750,21 @@ export const generateImageFromText = async (
             parts.push({ text: enhancedPrompt });
 
             try {
-                // Build generation config with aspect ratio support
+                // Build generation config with aspect ratio and resolution support
                 const generationConfig: any = {};
 
-                // Add image generation config if aspect ratio is specified
-                if (options.aspectRatio) {
-                    generationConfig.imageGenerationConfig = {
-                        aspectRatio: options.aspectRatio
-                    };
+                // Add image generation config if aspect ratio or resolution is specified
+                if (options.aspectRatio || options.resolution) {
+                    generationConfig.imageGenerationConfig = {};
+
+                    if (options.aspectRatio) {
+                        generationConfig.imageGenerationConfig.aspectRatio = options.aspectRatio;
+                    }
+
+                    if (options.resolution) {
+                        // Map resolution to image_size parameter (must be "1K", "2K", or "4K")
+                        generationConfig.imageGenerationConfig.image_size = options.resolution;
+                    }
                 }
 
                 const response = await ai.models.generateContent({

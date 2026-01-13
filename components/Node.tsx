@@ -606,7 +606,7 @@ const NodeComponent: React.FC<NodeProps> = ({
         {(node.data.image || node.data.videoUri || node.data.audioUri) && (
           <div className="flex items-center gap-1">
             <button onClick={handleDownload} className="p-1.5 bg-black/40 border border-white/10 backdrop-blur-md rounded-md text-slate-400 hover:text-white hover:border-white/30 transition-colors" title="下载"><Download size={14} /></button>
-            {node.type !== NodeType.AUDIO_GENERATOR && <button onClick={handleExpand} className="p-1.5 bg-black/40 border border-white/10 backdrop-blur-md rounded-md text-slate-400 hover:text-white hover:border-white/30 transition-colors" title="全屏预览"><Maximize2 size={14} /></button>}
+            {node.type !== NodeType.AUDIO_GENERATOR && node.type !== NodeType.STORYBOARD_IMAGE && <button onClick={handleExpand} className="p-1.5 bg-black/40 border border-white/10 backdrop-blur-md rounded-md text-slate-400 hover:text-white hover:border-white/30 transition-colors" title="全屏预览"><Maximize2 size={14} /></button>}
           </div>
         )}
       </div>
@@ -1375,13 +1375,18 @@ const NodeComponent: React.FC<NodeProps> = ({
           const isSplitting = node.data.isSplitting || false;
           const connectedStoryboardNodes = allNodes.filter(n => node.inputs.includes(n.id) && n.type === NodeType.STORYBOARD_IMAGE);
 
+          // 过滤掉空的分镜：必须同时有画面描述和拆解图片
+          const validShots = splitShots.filter((shot) => {
+              return shot.visualDescription && shot.splitImage;
+          });
+
           return (
               <div className="w-full h-full flex flex-col overflow-hidden relative bg-[#1c1c1e]">
                   {/* Content Area - Split Results List */}
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
-                      {splitShots.length > 0 ? (
+                      {validShots.length > 0 ? (
                           <div className="p-4 space-y-3">
-                              {splitShots.map((shot) => (
+                              {validShots.map((shot) => (
                                   <div key={shot.id} className="bg-black/40 border border-white/10 rounded-lg p-4">
                                       <div className="flex items-start gap-4">
                                           {/* Left: Image */}
@@ -1495,18 +1500,30 @@ const NodeComponent: React.FC<NodeProps> = ({
                           <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-600 p-6 text-center">
                               {isSplitting ? (
                                   <Loader2 size={32} className="animate-spin text-blue-500" />
+                              ) : splitShots.length > 0 && validShots.length === 0 ? (
+                                  // 有分镜但全部被过滤（都是空的）
+                                  <>
+                                      <AlertCircle size={32} className="text-orange-500/50" />
+                                      <span className="text-xs font-medium">所有分镜内容为空，无法展示</span>
+                                      <div className="flex flex-col gap-1 text-[10px] text-slate-500 max-w-[260px]">
+                                          <span>💡 分镜缺少画面描述或拆解图片</span>
+                                          <span>✂️ 请重新生成分镜图并确保内容完整</span>
+                                      </div>
+                                  </>
                               ) : (
-                                  <Grid size={32} className="text-blue-500/50" />
-                              )}
-                              <span className="text-xs font-medium">
-                                  {isSplitting ? "正在切割分镜图..." : "等待切割分镜图..."}
-                              </span>
-                              {!isSplitting && connectedStoryboardNodes.length === 0 && (
-                                  <div className="flex flex-col gap-1 text-[10px] text-slate-500 max-w-[220px]">
-                                      <span>💡 连接分镜图设计节点</span>
-                                      <span>✂️ 鼠标移入底部面板选择要切割的图片</span>
-                                      <span>📦 切割后可导出图片包</span>
-                                  </div>
+                                  <>
+                                      <Grid size={32} className="text-blue-500/50" />
+                                      <span className="text-xs font-medium">
+                                          {isSplitting ? "正在切割分镜图..." : "等待切割分镜图..."}
+                                      </span>
+                                      {!isSplitting && connectedStoryboardNodes.length === 0 && (
+                                          <div className="flex flex-col gap-1 text-[10px] text-slate-500 max-w-[220px]">
+                                              <span>💡 连接分镜图设计节点</span>
+                                              <span>✂️ 鼠标移入底部面板选择要切割的图片</span>
+                                              <span>📦 切割后可导出图片包</span>
+                                          </div>
+                                      )}
+                                  </>
                               )}
                           </div>
                       )}

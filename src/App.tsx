@@ -777,20 +777,37 @@ export const App = () => {
                   
                   const viewPrompt = `
                   ${stylePrefix}
-                  Character Three-View Reference Sheet (Front, Side, Back).
-                  Subject: ${char.appearance}.
-                  Attributes: ${char.basicStats}.
-                  Full body standing pose, neutral expression.
-                  Clean white background.
-                  
-                  IMPORTANT REQUIREMENTS:
-                  - PURE IMAGE ONLY.
-                  - NO TEXT, NO LABELS, NO WRITING.
-                  - NO "FRONT VIEW" or "SIDE VIEW" labels.
-                  - NO info boxes or character stats.
-                  - Reference the character in the input image strictly. Maintain facial features, hair color, and clothing style.
-                  
-                  Negative: ${negativePrompt}.
+
+                  CHARACTER THREE-VIEW GENERATION TASK:
+                  Generate a character three-view reference sheet (front, side, back views) in 16:9 horizontal layout.
+
+                  Character Description:
+                  ${char.appearance}
+
+                  Attributes: ${char.basicStats}
+
+                  COMPOSITION LAYOUT - STRICT REQUIREMENTS:
+                  - Aspect Ratio: 16:9 horizontal (landscape) format
+                  - Layout: THREE EQUAL HORIZONTAL PANELS arranged LEFT TO RIGHT
+                  - Left Panel: FRONT VIEW (full body, facing forward)
+                  - Center Panel: SIDE VIEW (full body, profile view facing left or right)
+                  - Right Panel: BACK VIEW (full body, facing backward)
+                  - EACH PANEL MUST SHOW FULL BODY from head to feet
+                  - Clean white or neutral background
+                  - NO VERTICAL layout, NO GRID other than 3 horizontal panels
+
+                  CRITICAL REQUIREMENTS:
+                  1. FULL BODY ONLY - Each panel must show complete character from head to toe, NO half-body, NO portrait, NO upper body only
+                  2. STRICT LAYOUT - Exactly 3 horizontal panels (left-center-right), NO other arrangements, NO vertical stacking, NO irregular layouts
+                  3. CONSISTENT CHARACTER DESIGN - All three views must show the SAME character with consistent facial features, hair style, body proportions, and clothing
+                  4. NO TEXT, NO LABELS - Pure image only, no "Front View" or "Side View" text labels, no Chinese characters, no English text
+                  5. PROPER ANATOMY - Ensure correct body proportions and natural stance for each view angle
+                  6. NEUTRAL EXPRESSION - Use a calm, neutral face expression across all views
+                  7. CLEAR ALIGNMENT - All three figures should be aligned and proportionally consistent
+
+                  ${char.expressionSheet ? 'REFERENCE IMAGE: Use the expression sheet as visual reference for face and clothing details.' : ''}
+
+                  Negative: ${negativePrompt}, half body, portrait, upper body only, head and shoulders, close-up, vertical layout, grid, irregular layout, cropped, cut off.
                   `;
                   
                   // Use Expression Sheet as Input Image reference if available
@@ -805,9 +822,9 @@ export const App = () => {
                   while (hasText && attempt < MAX_ATTEMPTS) {
                       if (attempt > 0) {
                           const retryPrompt = viewPrompt + " NO TEXT. NO LABELS. CLEAR BACKGROUND.";
-                          viewImages = await generateImageFromText(retryPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '3:4', count: 1 });
+                          viewImages = await generateImageFromText(retryPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', count: 1 });
                       } else {
-                          viewImages = await generateImageFromText(viewPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '3:4', count: 1 });
+                          viewImages = await generateImageFromText(viewPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', count: 1 });
                       }
 
                       if (viewImages.length > 0) {
@@ -903,7 +920,8 @@ export const App = () => {
               Attributes: ${profile.basicStats}.
               White background, consistent character design.
               Composition: 3x3 grid.
-              Negative: ${negativePrompt}.
+              CRITICAL: NO TEXT, NO LABELS - Pure image only, no emotion labels (like "happy", "sad"), no numbers, no Chinese characters, no English text, no grid labels.
+              Negative: ${negativePrompt}, text, labels, emotion names, numbers, letters, writing, watermark, signature.
               `;
               const exprImages = await generateImageFromText(exprPrompt, 'gemini-2.5-flash-image', [], { aspectRatio: '1:1', count: 1 });
               profile.expressionSheet = exprImages[0];

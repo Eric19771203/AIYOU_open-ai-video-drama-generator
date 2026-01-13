@@ -1068,9 +1068,9 @@ export const App = () => {
                   while (hasText && attempt < MAX_ATTEMPTS) {
                       if (attempt > 0) {
                           const retryPrompt = viewPrompt + " NO TEXT. NO LABELS. CLEAR BACKGROUND.";
-                          viewImages = await generateImageFromText(retryPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', count: 1 });
+                          viewImages = await generateImageFromText(retryPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', resolution: '2K', count: 1 });
                       } else {
-                          viewImages = await generateImageFromText(viewPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', count: 1 });
+                          viewImages = await generateImageFromText(viewPrompt, 'gemini-2.5-flash-image', inputImages, { aspectRatio: '16:9', resolution: '2K', count: 1 });
                       }
 
                       if (viewImages.length > 0) {
@@ -1616,7 +1616,7 @@ export const App = () => {
                               retryPrompt,
                               'gemini-2.5-flash-image',
                               [],
-                              { aspectRatio: '16:9', count: 1 },
+                              { aspectRatio: '16:9', resolution: '2K', count: 1 },
                               { nodeId: nodeId, nodeType: node.type }
                           );
                       } else {
@@ -1624,7 +1624,7 @@ export const App = () => {
                               viewPrompt,
                               'gemini-2.5-flash-image',
                               [],
-                              { aspectRatio: '16:9', count: 1 },
+                              { aspectRatio: '16:9', resolution: '2K', count: 1 },
                               { nodeId: nodeId, nodeType: node.type }
                           );
                       }
@@ -2059,7 +2059,7 @@ export const App = () => {
                                       retryPrompt,
                                       'gemini-2.5-flash-image',
                                       [],
-                                      { aspectRatio: '16:9', count: 1 },
+                                      { aspectRatio: '16:9', resolution: '2K', count: 1 },
                                       { nodeId: id, nodeType: node.type }
                                   );
                               } else {
@@ -2067,7 +2067,7 @@ export const App = () => {
                                       viewPrompt,
                                       'gemini-2.5-flash-image',
                                       [],
-                                      { aspectRatio: '16:9', count: 1 },
+                                      { aspectRatio: '16:9', resolution: '2K', count: 1 },
                                       { nodeId: id, nodeType: node.type }
                                   );
                               }
@@ -2679,9 +2679,9 @@ export const App = () => {
                       }
                   }
 
-                  // Build comprehensive prompt with 4K resolution and subtle panel numbers
+                  // Build comprehensive prompt with 2K resolution and subtle panel numbers
                   const gridPrompt = `
-Create a professional cinematic storyboard ${gridLayout} grid layout at 4K resolution.
+Create a professional cinematic storyboard ${gridLayout} grid layout at 2K resolution.
 
 OVERALL IMAGE SPECS:
 - Output Aspect Ratio: ${outputAspectRatio} (${panelOrientation === '16:9' ? 'landscape' : 'portrait'})
@@ -2694,13 +2694,14 @@ OVERALL IMAGE SPECS:
 
 QUALITY STANDARDS:
 - Professional film industry storyboard quality
-- 4K UHD resolution (3840 pixels wide)
-- High detail, sharp lines, professional illustration
+- **2K HD resolution (2048 pixels wide base)**
+- High-detail illustration with sharp focus
+- Suitable for web and digital display
+- Crisp edges, no blurring or artifacts
 - Cinematic composition with proper framing
 - Expressive character poses and emotions
 - Dynamic lighting and shading
 - Clear foreground/background separation
-- Crisp edges, no blurring or artifacts
 - CRITICAL: Maintain 100% visual style consistency across ALL panels
 - ALL characters must look identical across all panels (same face, hair, clothes, body type)
 - Same color palette, same art style, same lighting quality throughout
@@ -2748,6 +2749,7 @@ COMPOSITION REQUIREMENTS:
                           characterReferenceImages,
                           {
                               aspectRatio: outputAspectRatio,
+                              resolution: "2K",
                               count: 1
                           },
                           { nodeId: id, nodeType: node.type }
@@ -3158,6 +3160,8 @@ COMPOSITION REQUIREMENTS:
               x={contextMenu?.x || 0}
               y={contextMenu?.y || 0}
               target={contextMenuTarget}
+              nodeData={nodes.find(n => n.id === contextMenu?.id)?.data}
+              nodeType={nodes.find(n => n.id === contextMenu?.id)?.type}
               nodeTypes={[
                   NodeType.PROMPT_INPUT,
                   NodeType.IMAGE_GENERATOR,
@@ -3192,6 +3196,50 @@ COMPOSITION REQUIREMENTS:
 
                       case 'delete':
                           deleteNodes([data]);
+                          break;
+
+                      case 'downloadImage':
+                          const downloadNode = nodes.find(n => n.id === data);
+                          console.log('[下载分镜图] 节点ID:', data, '节点数据:', downloadNode?.data);
+
+                          if (!downloadNode) {
+                              console.error('[下载分镜图] 未找到节点');
+                              break;
+                          }
+
+                          if (downloadNode.data.storyboardGridImages?.length > 0) {
+                              // 下载所有分镜图页面
+                              console.log('[下载分镜图] 开始下载', downloadNode.data.storyboardGridImages.length, '张图片');
+
+                              downloadNode.data.storyboardGridImages.forEach((imageUrl: string, index: number) => {
+                                  setTimeout(() => {
+                                      try {
+                                          const a = document.createElement('a');
+                                          a.href = imageUrl;
+                                          a.download = `storyboard-page-${index + 1}-${Date.now()}.png`;
+                                          a.target = '_blank'; // 在新标签页打开，避免浏览器阻止
+                                          document.body.appendChild(a);
+                                          a.click();
+                                          setTimeout(() => document.body.removeChild(a), 100);
+                                          console.log(`[下载分镜图] 第 ${index + 1} 张下载完成`);
+                                      } catch (err) {
+                                          console.error(`[下载分镜图] 第 ${index + 1} 张下载失败:`, err);
+                                      }
+                                  }, index * 800); // 增加间隔到800ms
+                              });
+                          } else if (downloadNode.data.storyboardGridImage) {
+                              // 下载单张分镜图
+                              console.log('[下载分镜图] 下载单张图片');
+                              const a = document.createElement('a');
+                              a.href = downloadNode.data.storyboardGridImage;
+                              a.download = `storyboard-${Date.now()}.png`;
+                              a.target = '_blank';
+                              document.body.appendChild(a);
+                              a.click();
+                              setTimeout(() => document.body.removeChild(a), 100);
+                          } else {
+                              console.warn('[下载分镜图] 节点中没有找到图片数据');
+                          }
                           break;
 
                       case 'createNode':

@@ -1,6 +1,6 @@
 // components/CanvasContextMenu.tsx
 import React from 'react';
-import { Copy, Trash2, FolderHeart, Unplug, RefreshCw } from 'lucide-react';
+import { Copy, Trash2, FolderHeart, Unplug, RefreshCw, Download } from 'lucide-react';
 import { NodeType } from '../types';
 import { useLanguage } from '../src/i18n/LanguageContext';
 
@@ -17,6 +17,8 @@ interface CanvasContextMenuProps {
   y: number;
   target: ContextMenuTarget | null;
   nodeTypes?: NodeType[];
+  nodeData?: any; // 添加节点数据
+  nodeType?: NodeType; // 添加节点类型
   onClose: () => void;
   onAction: (action: string, data?: any) => void;
   getNodeIcon: (type: NodeType) => any;
@@ -32,6 +34,8 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
   y,
   target,
   nodeTypes = [],
+  nodeData,
+  nodeType,
   onClose,
   onAction,
   getNodeIcon,
@@ -46,6 +50,11 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
     onClose();
   };
 
+  // 检查是否为分镜图设计节点且有图片
+  const isStoryboardImageWithImage = nodeType === NodeType.STORYBOARD_IMAGE && (
+    nodeData?.storyboardGridImages?.length > 0 || nodeData?.storyboardGridImage
+  );
+
   return (
     <div
       className="fixed z-[100] bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-1.5 min-w-[160px] animate-in fade-in zoom-in-95 duration-200 origin-top-left"
@@ -55,6 +64,16 @@ export const CanvasContextMenu: React.FC<CanvasContextMenuProps> = ({
       {/* 节点右键菜单 */}
       {target.type === 'node' && (
         <>
+          {/* 下载原图 - 仅分镜图设计节点显示 */}
+          {isStoryboardImageWithImage && (
+            <button
+              className="w-full text-left px-3 py-2 text-xs font-medium text-green-400 hover:bg-green-500/20 rounded-lg flex items-center gap-2 transition-colors"
+              onClick={() => handleAction('downloadImage', target.id)}
+            >
+              <Download size={12} /> 下载原图
+            </button>
+          )}
+
           <button
             className="w-full text-left px-3 py-2 text-xs font-medium text-slate-300 hover:bg-cyan-500/20 hover:text-cyan-400 rounded-lg flex items-center gap-2 transition-colors"
             onClick={() => handleAction('copy', target.id)}

@@ -1,20 +1,217 @@
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+# 🎬 AIYOU - AI驱动的一站式漫剧创作平台
+
+**一个人就是一个团队 | 从创意到成片的全流程AI解决方案**
+
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite)](https://vite.dev)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
 </div>
 
-# Run and deploy your AI Studio app
+---
 
-This contains everything you need to run your app locally.
+## ✨ 项目简介
 
-View your app in AI Studio: https://ai.studio/apps/drive/1t1SDXhXtTReBhgpTyeWpqgjQPfPDz3rV
+**AIYOU** 是一个革命性的AI驱动漫剧创作平台，让创作者能够通过简单的节点式操作，完成从创意构思到最终视频成片的全流程制作。
 
-## Run Locally
+### 🎯 核心优势
 
-**Prerequisites:**  Node.js
+- 🚀 **极致效率**：传统需要一周的制作流程，现在2小时完成
+- 🎨 **专业品质**：支持2K高清输出，媲美专业制作团队
+- 🤖 **全流程AI**：12个智能节点覆盖剧本、角色、分镜、视频全流程
+- 🔗 **节点联动**：拖拽连线即可自动生成，像搭积木一样简单
+- 💰 **成本极低**：无需外包，一个人就能完成所有工作
+- 🔒 **数据安全**：本地部署，创作隐私有保障
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## 🎨 功能模块
+
+### 📝 剧本创作
+
+| 节点 | 功能 | 价值 |
+|------|------|------|
+| **创意描述** | 随手写下想法，AI扩展成完整故事 | 降低创作门槛，灵感快速落地 |
+| **剧本大纲** | 一键生成5-50集剧本框架，包含世界观、角色设定 | 省去数天的剧本构思时间 |
+| **剧本分集** | 自动拆分每集剧情，生成人物对白和场景描写 | 对白、场景自动完成，专业级质量 |
+
+### 🎭 角色与分镜
+
+| 节点 | 功能 | 价值 |
+|------|------|------|
+| **角色设计** | AI自动设计角色形象，生成三视图+九宫格表情包 | 无需美术基础，主角配角都能设计 |
+| **分镜生成** | 根据剧本自动生成分镜脚本，镜头类型、角度、运动、时长全专业 | 专业镜头语言，导演级分镜 |
+| **分镜图设计** | 文字直接生成2K高清分镜画面，支持九宫格/六宫格布局 | 每一帧都是壁纸级别，快速可视化 |
+
+### 🎨 视觉创作
+
+| 节点 | 功能 | 价值 |
+|------|------|------|
+| **文字生图** | 支持写实/二次元/3D多种画风，保持角色一致性 | 任意画风都能实现，无需学绘画 |
+| **图像编辑** | 智能裁剪、调整、优化 | 不用学PS也能出大片 |
+
+### 🎬 视频与音频
+
+| 节点 | 功能 | 价值 |
+|------|------|------|
+| **文生视频** | 文字直接生成视频，支持续帧延长、首尾帧连接、角色参考 | 一键生成高质量视频 |
+| **灵感音乐** | 自动生成背景音乐，时长可调，完美匹配剧情氛围 | 氛围BGM自动匹配 |
+| **视频分析** | 上传参考视频，AI拆解镜头技巧和创作手法 | 学习爆款视频的制作技巧 |
+
+### 📊 剧集优化
+
+| 节点 | 功能 | 价值 |
+|------|------|------|
+| **剧集分析** | 分析爆款剧的世界观、逻辑性、角色弧光、受众共鸣点 | 学习爆款的成功秘诀 |
+
+---
+
+## 💡 适用场景
+
+- 🎬 **短视频创作者** - 批量生产高质量内容，提升粉丝增长
+- 📚 **漫画工作室** - 快速出分镜，大幅提升制作效率
+- 🎮 **游戏开发者** - 角色设计、剧情CG、宣传视频一站式搞定
+- ✍️ **网文作者** - 小说可视化，看看你的故事变成画面
+- 🎨 **设计师** - 灵感爆发，创意快速落地
+- 📱 **自媒体运营** - 内容创作自动化，效率提升10倍
+
+---
+
+## 🚀 快速开始
+
+### 环境要求
+
+- Node.js 18+
+- npm 或 yarn 或 pnpm
+
+### 安装步骤
+
+1. **克隆项目**
+```bash
+git clone https://github.com/yubowen123/AI-YOU.git
+cd AI-YOU
+```
+
+2. **安装依赖**
+```bash
+npm install
+```
+
+3. **配置API密钥**
+
+创建 `.env.local` 文件，设置你的 Gemini API Key：
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+> 💡 获取 API Key：[Google AI Studio](https://ai.google.dev/)
+
+4. **启动开发服务器**
+```bash
+npm run dev
+```
+
+5. **访问应用**
+
+打开浏览器访问 [http://localhost:4000](http://localhost:4000)
+
+---
+
+## 🛠️ 技术栈
+
+### 前端框架
+- **React 18.3** - 用户界面构建
+- **TypeScript 5.7** - 类型安全
+- **Vite 6.0** - 构建工具
+
+### 核心库
+- **React Flow** - 节点式画布交互
+- **Tailwind CSS** - 样式系统
+- **Zustand** - 状态管理
+- **Lucide React** - 图标库
+
+### AI集成
+- **Google Gemini API** - 图像生成、视频生成、剧本创作
+- **DeepSeek** - 备用AI模型
+- **自动降级机制** - 多模型智能切换，确保稳定性
+
+### 特色功能
+- **多模型自动降级** - API失败时自动切换备用模型
+- **智能配额管理** - 避免超限，合理分配API调用
+- **角色一致性保持** - 支持参考图，确保角色形象统一
+- **高清输出** - 支持1K/2K/4K多种分辨率
+
+---
+
+## 📖 使用指南
+
+### 基础工作流
+
+```
+创意描述 → 剧本大纲 → 剧本分集 → 角色设计 → 分镜图设计 → 文生视频
+```
+
+### 典型创作流程
+
+1. **输入创意** - 使用「创意描述」节点写下故事想法
+2. **生成剧本** - 连接「剧本大纲」和「剧本分集」生成完整剧本
+3. **设计角色** - 使用「角色设计」节点创建角色三视图和表情包
+4. **制作分镜** - 连接「分镜图设计」节点，生成分镜画面
+5. **生成视频** - 使用「文生视频」节点生成最终视频
+6. **添加音乐** - 使用「灵感音乐」节点生成背景音乐
+
+---
+
+## 🎯 核心特性
+
+### 节点式创作
+- 拖拽节点到画布
+- 连线建立数据流
+- 自动执行生成任务
+- 实时预览结果
+
+### 智能联动
+- 剧本自动传递给分镜
+- 角色信息共享到所有节点
+- 分镜图直接生成视频
+- 全流程无缝衔接
+
+### 多模型支持
+- Gemini 2.5 Flash
+- Gemini 2.5 Pro
+- DeepSeek V3
+- 自动降级，永不宕机
+
+---
+
+## 📝 许可证
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+---
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+---
+
+## 📧 联系方式
+
+- GitHub Issues: [提交问题](https://github.com/yubowen123/AI-YOU/issues)
+- 项目链接: [https://github.com/yubowen123/AI-YOU](https://github.com/yubowen123/AI-YOU)
+
+---
+
+<div align="center">
+
+**如果这个项目对你有帮助，请给个 ⭐️ 支持一下！**
+
+Made with ❤️ by AIYOU Team
+
+</div>

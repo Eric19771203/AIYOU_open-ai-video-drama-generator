@@ -342,11 +342,11 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
                 {[
                     { id: 'add', icon: Plus },
                     { id: 'workflow', icon: FolderHeart },
-                    { id: 'smart_sequence', icon: Clapperboard, action: onToggleMultiFrame, active: isMultiFrameOpen },
-                    { id: 'sonic_studio', icon: Mic2, action: onToggleSonicStudio, active: isSonicStudioOpen, tooltip: '音频中心 (Audio Hub)' },
-                    { id: 'character_library', icon: User, action: onToggleCharacterLibrary, active: isCharacterLibraryOpen, tooltip: '角色库 (Char Lib)' },
+                    // { id: 'smart_sequence', icon: Clapperboard, action: onToggleMultiFrame, active: isMultiFrameOpen },  // 隐藏智能多帧
+                    // { id: 'sonic_studio', icon: Mic2, action: onToggleSonicStudio, active: isSonicStudioOpen, tooltip: '音频中心' },  // 隐藏音频中心
+                    { id: 'character_library', icon: User, action: onToggleCharacterLibrary, active: isCharacterLibraryOpen, tooltip: '角色库' },
                     { id: 'history', icon: History },
-                    { id: 'chat', icon: MessageSquare, action: onToggleChat, active: isChatOpen },
+                    // { id: 'chat', icon: MessageSquare, action: onToggleChat, active: isChatOpen },  // 隐藏AI创意助手
                     { id: 'debug', icon: Bug, action: onToggleDebug, active: isDebugOpen, tooltip: 'API日志调试' },
                     { id: 'undo', icon: RotateCcw, action: onUndo },
                 ].map(item => (
@@ -359,9 +359,9 @@ export const SidebarDock: React.FC<SidebarDockProps> = ({
                             <item.icon size={20} strokeWidth={2} />
                         </button>
                         {/* Tooltip for Sidebar Icons */}
-                        {(item.id === 'smart_sequence' || item.id === 'sonic_studio' || item.id === 'character_library' || item.id === 'debug') && (
+                        {(item.id === 'character_library' || item.id === 'debug') && (
                             <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2 py-1 bg-black/80 backdrop-blur-md rounded border border-white/10 text-[10px] text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                                {item.tooltip || (item.id === 'smart_sequence' ? '智能多帧' : item.id === 'debug' ? 'API日志调试' : '音频中心')}
+                                {item.tooltip || (item.id === 'debug' ? 'API日志调试' : '角色库')}
                             </div>
                         )}
                     </div>

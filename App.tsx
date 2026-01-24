@@ -3801,18 +3801,16 @@ COMPOSITION REQUIREMENTS:
               nodeType={nodes.find(n => n.id === contextMenu?.id)?.type}
               selectedNodeIds={selectedNodeIds}
               nodeTypes={[
-                  NodeType.PROMPT_INPUT,
                   NodeType.IMAGE_GENERATOR,
-                  NodeType.VIDEO_GENERATOR,
-                  NodeType.AUDIO_GENERATOR,
                   NodeType.SCRIPT_PLANNER,
                   NodeType.SCRIPT_EPISODE,
                   NodeType.CHARACTER_NODE,
+                  NodeType.STYLE_PRESET,
                   NodeType.STORYBOARD_GENERATOR,
                   NodeType.STORYBOARD_IMAGE,
-                  NodeType.DRAMA_ANALYZER,
-                  NodeType.VIDEO_ANALYZER,
-                  NodeType.IMAGE_EDITOR
+                  NodeType.STORYBOARD_SPLITTER,
+                  NodeType.SORA_VIDEO_GENERATOR,
+                  NodeType.DRAMA_ANALYZER
               ]}
               onClose={() => setContextMenu(null)}
               onAction={(action, data) => {

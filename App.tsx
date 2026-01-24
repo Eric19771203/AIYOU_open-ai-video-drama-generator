@@ -1213,7 +1213,7 @@ export const App = () => {
   };
 
   // --- Character Action Handler ---
-  const handleCharacterAction = async (nodeId: string, action: 'DELETE' | 'SAVE' | 'RETRY' | 'GENERATE_EXPRESSION' | 'GENERATE_THREE_VIEW' | 'GENERATE_SINGLE', charName: string) => {
+  const handleCharacterAction = useCallback(async (nodeId: string, action: 'DELETE' | 'SAVE' | 'RETRY' | 'GENERATE_EXPRESSION' | 'GENERATE_THREE_VIEW' | 'GENERATE_SINGLE', charName: string) => {
       const node = nodesRef.current.find(n => n.id === nodeId);
       if (!node) return;
 
@@ -1226,7 +1226,191 @@ export const App = () => {
           nodesRef.current,
           handleNodeUpdate
       );
-  };
+  }, [handleNodeUpdate]);
+
+  // --- Node Event Handlers (useCallback for performance) ---
+  const handleNodeDelete = useCallback((id: string) => {
+      deleteNodes([id]);
+  }, []);
+
+  const handleNodeExpand = useCallback((data: { type: 'image' | 'video', src: string, rect: DOMRect, images?: string[], initialIndex?: number }) => {
+      setExpandedMedia(data);
+  }, []);
+
+  const handleNodeCrop = useCallback((id: string, img: string) => {
+      setCroppingNodeId(id);
+      setImageToCrop(img);
+  }, []);
+
+  const handleNodeMouseDown = useCallback((e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      const isAlreadySelected = selectedNodeIds.includes(id);
+
+      // 如果按住shift/meta/ctrl键，切换选中状态
+      if (e.shiftKey || e.metaKey || e.ctrlKey) {
+          setSelectedNodeIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+      } else if (!isAlreadySelected) {
+          // 如果点击的节点未被选中，清除其他选中，只选中当前节点
+          setSelectedNodeIds([id]);
+      }
+      // 如果点击的节点已经被选中，保持选中状态不变（支持多选拖拽）
+
+      const n = nodesRef.current.find(x => x.id === id);
+      if (!n) return;
+
+      const w = n.width || 420;
+      const h = n.height || getApproxNodeHeight(n);
+      const cx = n.x + w/2;
+      const cy = n.y + 160;
+      const pGroup = groups.find(g => {
+          return cx > g.x && cx < g.x + g.width && cy > g.y && cy < g.y + g.height;
+      });
+
+      let siblingNodeIds: string[] = [];
+      if (pGroup) {
+          siblingNodeIds = nodesRef.current.filter(other => {
+              if (other.id === id) return false;
+              const b = getNodeBounds(other);
+              const ocx = b.x + b.width/2;
+              const ocy = b.y + b.height/2;
+              return ocx > pGroup.x && ocx < pGroup.x + pGroup.width && ocy > pGroup.y && ocy < pGroup.y + pGroup.height;
+          }).map(s => s.id);
+      }
+
+      // 记录多选拖拽信息
+      const currentSelectedIds = selectedNodeIds.includes(id) ? selectedNodeIds : [id];
+      const isMultiDrag = currentSelectedIds.length > 1;
+      const selectedNodesStartPos = isMultiDrag
+          ? nodesRef.current.filter(node => currentSelectedIds.includes(node.id))
+              .map(node => ({ id: node.id, x: node.x, y: node.y }))
+          : [];
+
+      dragNodeRef.current = {
+          id,
+          startX: n.x,
+          startY: n.y,
+          mouseStartX: e.clientX,
+          mouseStartY: e.clientY,
+          parentGroupId: pGroup?.id,
+          siblingNodeIds,
+          nodeWidth: w,
+          nodeHeight: h,
+          isMultiDrag,
+          selectedNodeIds: currentSelectedIds,
+          selectedNodesStartPos
+      };
+      setDraggingNodeParentGroupId(pGroup?.id || null);
+      setDraggingNodeId(id);
+  }, [selectedNodeIds, groups, getApproxNodeHeight, getNodeBounds]);
+
+  const handlePortMouseDown = useCallback((e: React.MouseEvent, id: string, type: 'input' | 'output') => {
+      e.stopPropagation();
+      setConnectionStart({ id, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handlePortMouseUp = useCallback((e: React.MouseEvent, id: string, type: 'input' | 'output') => {
+      e.stopPropagation();
+      const start = connectionStartRef.current;
+      if (!start || start.id === id) return;
+
+      if (start.id === 'smart-sequence-dock') {
+          // Smart Sequence Dock 的连接逻辑保持不变
+          setConnectionStart(null);
+          return;
+      }
+
+      // 获取源节点和目标节点
+      const fromNode = nodesRef.current.find(n => n.id === start.id);
+      const toNode = nodesRef.current.find(n => n.id === id);
+
+      if (fromNode && toNode) {
+          // 验证连接是否合法
+          const validation = validateConnection(fromNode, toNode, connections);
+
+          if (validation.valid) {
+              // 连接合法,创建连接
+              setConnections(p => [...p, { from: start.id, to: id }]);
+              setNodes(p => p.map(n =>
+                  n.id === id ? { ...n, inputs: [...n.inputs, start.id] } : n
+              ));
+          } else {
+              // 连接不合法,显示错误提示
+              alert(validation.error || '无法创建连接');
+          }
+      }
+
+      setConnectionStart(null);
+  }, [connections]);
+
+  const handleNodeContextMenu = useCallback((e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setContextMenu({ visible: true, x: e.clientX, y: e.clientY, id });
+      setContextMenuTarget({ type: 'node', id });
+  }, []);
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent, id: string, w: number, h: number) => {
+      e.stopPropagation();
+      const n = nodesRef.current.find(x => x.id === id);
+      if (!n) return;
+
+      const cx = n.x + w/2;
+      const cy = n.y + 160;
+      const pGroup = groups.find(g => {
+          return cx > g.x && cx < g.x + g.width && cy > g.y && cy < g.y + g.height;
+      });
+
+      setDraggingNodeParentGroupId(pGroup?.id || null);
+
+      let siblingNodeIds: string[] = [];
+      if (pGroup) {
+          siblingNodeIds = nodesRef.current.filter(other => {
+              if (other.id === id) return false;
+              const b = getNodeBounds(other);
+              const ocx = b.x + b.width/2;
+              const ocy = b.y + b.height/2;
+              return ocx > pGroup.x && ocx < pGroup.x + pGroup.width && ocy > pGroup.y && ocy < pGroup.y + pGroup.height;
+          }).map(s => s.id);
+      }
+
+      resizeContextRef.current = {
+          nodeId: id,
+          initialWidth: w,
+          initialHeight: h,
+          startX: e.clientX,
+          startY: e.clientY,
+          parentGroupId: pGroup?.id || null,
+          siblingNodeIds
+      };
+
+      setResizingNodeId(id);
+      setInitialSize({ width: w, height: h });
+      setResizeStartPos({ x: e.clientX, y: e.clientY });
+  }, [groups, getNodeBounds]);
+
+  const handleInputReorder = useCallback((nodeId: string, newOrder: string[]) => {
+      const node = nodesRef.current.find(n => n.id === nodeId);
+      if (node) {
+          setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, inputs: newOrder } : n));
+      }
+  }, []);
+
+  const handleViewCharacter = useCallback((character: CharacterProfile) => {
+      setViewingCharacter({ character, nodeId: '' }); // nodeId will be set by Node component
+  }, []);
+
+  // --- Helper: Calculate input assets for a node ---
+  const getNodeInputAssets = useCallback((nodeId: string, inputs: string[]): InputAsset[] => {
+      return inputs
+          .map(i => nodesRef.current.find(n => n.id === i))
+          .filter(n => n && (n.data.image || n.data.videoUri || n.data.croppedFrame))
+          .slice(0, 6)
+          .map(n => ({
+              id: n!.id,
+              type: (n!.data.croppedFrame || n!.data.image) ? 'image' : 'video',
+              src: n!.data.croppedFrame || n!.data.image || n!.data.videoUri!
+          }));
+  }, []);
 
   // --- Main Action Handler ---
   const handleNodeAction = useCallback(async (id: string, promptOverride?: string) => {
@@ -3556,116 +3740,34 @@ COMPOSITION REQUIREMENTS:
                   />
               </svg>
 
-              {nodes.map(node => (
-              <Node
-                  key={node.id}
-                  node={node}
-                  // 性能优化：使用nodeQuery而不是传递整个nodes数组
-                  nodeQuery={nodeQuery.current}
-                  characterLibrary={assetHistory.filter(a => a.type === 'character').map(a => a.data)}
-                  onUpdate={handleNodeUpdate} 
-                  onAction={handleNodeAction} 
-                  onDelete={(id) => deleteNodes([id])} 
-                  onExpand={setExpandedMedia} 
-                  onCrop={(id, img) => { setCroppingNodeId(id); setImageToCrop(img); }}
-                  onNodeMouseDown={(e, id) => {
-                      e.stopPropagation();
-                      const isAlreadySelected = selectedNodeIds.includes(id);
-
-                      // 如果按住shift/meta/ctrl键，切换选中状态
-                      if (e.shiftKey || e.metaKey || e.ctrlKey) {
-                          setSelectedNodeIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-                      } else if (!isAlreadySelected) {
-                          // 如果点击的节点未被选中，清除其他选中，只选中当前节点
-                          setSelectedNodeIds([id]);
-                      }
-                      // 如果点击的节点已经被选中，保持选中状态不变（支持多选拖拽）
-
-                      const n = nodes.find(x => x.id === id);
-                      if (n) {
-                          const w = n.width || 420; const h = n.height || getApproxNodeHeight(n); const cx = n.x + w/2; const cy = n.y + 160;
-                          const pGroup = groups.find(g => { return cx > g.x && cx < g.x + g.width && cy > g.y && cy < g.y + g.height; });
-                          let siblingNodeIds: string[] = [];
-                          if (pGroup) { siblingNodeIds = nodes.filter(other => { if (other.id === id) return false; const b = getNodeBounds(other); const ocx = b.x + b.width/2; const ocy = b.y + b.height/2; return ocx > pGroup.x && ocx < pGroup.x + pGroup.width && ocy > pGroup.y && ocy < pGroup.y + pGroup.height; }).map(s => s.id); }
-
-                          // 记录多选拖拽信息
-                          const currentSelectedIds = selectedNodeIds.includes(id) ? selectedNodeIds : [id];
-                          const isMultiDrag = currentSelectedIds.length > 1;
-                          const selectedNodesStartPos = isMultiDrag
-                              ? nodes.filter(node => currentSelectedIds.includes(node.id))
-                                  .map(node => ({ id: node.id, x: node.x, y: node.y }))
-                              : [];
-
-                          dragNodeRef.current = {
-                              id,
-                              startX: n.x,
-                              startY: n.y,
-                              mouseStartX: e.clientX,
-                              mouseStartY: e.clientY,
-                              parentGroupId: pGroup?.id,
-                              siblingNodeIds,
-                              nodeWidth: w,
-                              nodeHeight: h,
-                              isMultiDrag,
-                              selectedNodeIds: currentSelectedIds,
-                              selectedNodesStartPos
-                          };
-                          setDraggingNodeParentGroupId(pGroup?.id || null);
-                          setDraggingNodeId(id);
-                      }
-                  }}
-                  onPortMouseDown={(e, id, type) => { e.stopPropagation(); setConnectionStart({ id, x: e.clientX, y: e.clientY }); }}
-                  onPortMouseUp={(e, id, type) => {
-                      e.stopPropagation();
-                      const start = connectionStartRef.current;
-                      if (start && start.id !== id) {
-                          if (start.id === 'smart-sequence-dock') {
-                              // Smart Sequence Dock 的连接逻辑保持不变
-                          } else {
-                              // 获取源节点和目标节点
-                              const fromNode = nodes.find(n => n.id === start.id);
-                              const toNode = nodes.find(n => n.id === id);
-
-                              if (fromNode && toNode) {
-                                  // 验证连接是否合法
-                                  const validation = validateConnection(fromNode, toNode, connections);
-
-                                  if (validation.valid) {
-                                      // 连接合法,创建连接
-                                      setConnections(p => [...p, { from: start.id, to: id }]);
-                                      setNodes(p => p.map(n =>
-                                          n.id === id ? { ...n, inputs: [...n.inputs, start.id] } : n
-                                      ));
-                                  } else {
-                                      // 连接不合法,显示错误提示
-                                      alert(validation.error || '无法创建连接');
-                                  }
-                              }
-                          }
-                      }
-                      setConnectionStart(null);
-                  }}
-                  onNodeContextMenu={(e, id) => { e.stopPropagation(); e.preventDefault(); setContextMenu({ visible: true, x: e.clientX, y: e.clientY, id }); setContextMenuTarget({ type: 'node', id }); }}
-                  onResizeMouseDown={(e, id, w, h) => { 
-                      e.stopPropagation(); const n = nodes.find(x => x.id === id);
-                      if (n) {
-                          const cx = n.x + w/2; const cy = n.y + 160; 
-                          const pGroup = groups.find(g => { return cx > g.x && cx < g.x + g.width && cy > g.y && cy < g.y + g.height; });
-                          setDraggingNodeParentGroupId(pGroup?.id || null);
-                          let siblingNodeIds: string[] = [];
-                          if (pGroup) { siblingNodeIds = nodes.filter(other => { if (other.id === id) return false; const b = getNodeBounds(other); const ocx = b.x + b.width/2; const ocy = b.y + b.height/2; return ocx > pGroup.x && ocx < pGroup.x + pGroup.width && ocy > pGroup.y && ocy < pGroup.y + pGroup.height; }).map(s => s.id); }
-                          resizeContextRef.current = { nodeId: id, initialWidth: w, initialHeight: h, startX: e.clientX, startY: e.clientY, parentGroupId: pGroup?.id || null, siblingNodeIds };
-                      }
-                      setResizingNodeId(id); setInitialSize({ width: w, height: h }); setResizeStartPos({ x: e.clientX, y: e.clientY }); 
-                  }}
-                  onCharacterAction={handleCharacterAction}
-                  onViewCharacter={(char) => setViewingCharacter({ character: char, nodeId: node.id })}
-                  isSelected={selectedNodeIds.includes(node.id)} 
-                  inputAssets={node.inputs.map(i => nodes.find(n => n.id === i)).filter(n => n && (n.data.image || n.data.videoUri || n.data.croppedFrame)).slice(0, 6).map(n => ({ id: n!.id, type: (n!.data.croppedFrame || n!.data.image) ? 'image' : 'video', src: n!.data.croppedFrame || n!.data.image || n!.data.videoUri! }))}
-                  onInputReorder={(nodeId, newOrder) => { const node = nodes.find(n => n.id === nodeId); if (node) { setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, inputs: newOrder } : n)); } }}
-                  isDragging={draggingNodeId === node.id} isResizing={resizingNodeId === node.id} isConnecting={!!connectionStart} isGroupDragging={activeGroupNodeIds.includes(node.id)}
-              />
-              ))}
+              {nodes.map(node => {
+                  const inputAssets = getNodeInputAssets(node.id, node.inputs);
+                  return (
+                  <Node
+                      key={node.id}
+                      node={node}
+                      // 性能优化：使用nodeQuery而不是传递整个nodes数组
+                      nodeQuery={nodeQuery.current}
+                      characterLibrary={assetHistory.filter(a => a.type === 'character').map(a => a.data)}
+                      onUpdate={handleNodeUpdate}
+                      onAction={handleNodeAction}
+                      onDelete={handleNodeDelete}
+                      onExpand={handleNodeExpand}
+                      onCrop={handleNodeCrop}
+                      onNodeMouseDown={handleNodeMouseDown}
+                      onPortMouseDown={handlePortMouseDown}
+                      onPortMouseUp={handlePortMouseUp}
+                      onNodeContextMenu={handleNodeContextMenu}
+                      onResizeMouseDown={handleResizeMouseDown}
+                      onCharacterAction={handleCharacterAction}
+                      onViewCharacter={(char) => setViewingCharacter({ character: char, nodeId: node.id })}
+                      isSelected={selectedNodeIds.includes(node.id)}
+                      inputAssets={inputAssets}
+                      onInputReorder={handleInputReorder}
+                      isDragging={draggingNodeId === node.id} isResizing={resizingNodeId === node.id} isConnecting={!!connectionStart} isGroupDragging={activeGroupNodeIds.includes(node.id)}
+                  />
+                  );
+              })}
 
               {selectionRect && <div className="absolute border border-cyan-500/40 bg-cyan-500/10 rounded-lg pointer-events-none" style={{ left: (Math.min(selectionRect.startX, selectionRect.currentX) - canvas.pan.x) / canvas.scale, top: (Math.min(selectionRect.startY, selectionRect.currentY) - canvas.pan.y) / canvas.scale, width: Math.abs(selectionRect.currentX - selectionRect.startX) / canvas.scale, height: Math.abs(selectionRect.currentY - selectionRect.startY) / canvas.scale }} />}
           </div>

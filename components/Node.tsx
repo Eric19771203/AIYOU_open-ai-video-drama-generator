@@ -201,20 +201,79 @@ const safePause = (e: React.SyntheticEvent<HTMLVideoElement> | HTMLVideoElement)
 };
 
 const arePropsEqual = (prev: NodeProps, next: NodeProps) => {
-    if (prev.isDragging !== next.isDragging || 
-        prev.isResizing !== next.isResizing || 
+    // 首先检查交互状态变化（这些状态变化时必须重新渲染）
+    if (prev.isDragging !== next.isDragging ||
+        prev.isResizing !== next.isResizing ||
         prev.isSelected !== next.isSelected ||
         prev.isGroupDragging !== next.isGroupDragging ||
         prev.isConnecting !== next.isConnecting) {
         return false;
     }
-    if (prev.node !== next.node) return false;
-    const prevInputs = prev.inputAssets || [];
-    const nextInputs = next.inputAssets || [];
-    if (prevInputs.length !== nextInputs.length) return false;
-    for(let i = 0; i < prevInputs.length; i++) {
-        if (prevInputs[i].id !== nextInputs[i].id || prevInputs[i].src !== nextInputs[i].src) return false;
+
+    // 深度比较node对象的关键属性（而不是引用比较）
+    const prevNode = prev.node;
+    const nextNode = next.node;
+
+    // 检查基本属性
+    if (prevNode.id !== nextNode.id ||
+        prevNode.type !== nextNode.type ||
+        prevNode.x !== nextNode.x ||
+        prevNode.y !== nextNode.y ||
+        prevNode.width !== nextNode.width ||
+        prevNode.height !== nextNode.height ||
+        prevNode.status !== nextNode.status) {
+        return false;
     }
+
+    // 检查node.data的关键属性
+    const prevData = prevNode.data;
+    const nextData = nextNode.data;
+
+    // 检查关键的data字段（这些字段变化时需要重新渲染）
+    const criticalDataKeys = [
+        'prompt', 'model', 'aspectRatio', 'resolution', 'count',
+        'image', 'videoUri', 'croppedFrame', 'analysis',
+        'scriptOutline', 'scriptGenre', 'scriptSetting', 'scriptVisualStyle',
+        'generatedEpisodes', 'storyboardGridImage', 'storyboardGridImages',
+        'extractedCharacterNames', 'characterConfigs', 'generatedCharacters',
+        'error', 'progress', 'duration', 'quality', 'isCompliant',
+        'isExpanded', 'videoMode', 'shotType', 'cameraAngle', 'cameraMovement',
+        'selectedFields', 'dramaName', 'taskGroups'
+    ];
+
+    for (const key of criticalDataKeys) {
+        if (prevData[key] !== nextData[key]) {
+            return false;
+        }
+    }
+
+    // 检查inputs数组
+    const prevInputs = prevNode.inputs;
+    const nextInputs = nextNode.inputs;
+    if (prevInputs.length !== nextInputs.length) {
+        return false;
+    }
+    for (let i = 0; i < prevInputs.length; i++) {
+        if (prevInputs[i] !== nextInputs[i]) {
+            return false;
+        }
+    }
+
+    // 检查inputAssets（输入的图片/视频资源）
+    const prevInputAssets = prev.inputAssets || [];
+    const nextInputAssets = next.inputAssets || [];
+    if (prevInputAssets.length !== nextInputAssets.length) {
+        return false;
+    }
+    for (let i = 0; i < prevInputAssets.length; i++) {
+        if (prevInputAssets[i].id !== nextInputAssets[i].id ||
+            prevInputAssets[i].src !== nextInputAssets[i].src ||
+            prevInputAssets[i].type !== nextInputAssets[i].type) {
+            return false;
+        }
+    }
+
+    // 所有关键属性都相同，不需要重新渲染
     return true;
 };
 

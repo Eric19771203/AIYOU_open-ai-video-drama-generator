@@ -547,7 +547,7 @@ export const App = () => {
   };
 
   // Global error handler for API calls
-  const handleApiError = (error: any, nodeId?: string) => {
+  const handleApiError = useCallback((error: any, nodeId?: string) => {
       const errorMessage = error?.message || String(error);
 
       // Check if error is due to missing API Key
@@ -572,14 +572,14 @@ export const App = () => {
       }
 
       return errorMessage;
-  };
+  }, []);
 
   // Handle API Key save from prompt
-  const handleApiKeySave = (apiKey: string) => {
+  const handleApiKeySave = useCallback((apiKey: string) => {
       localStorage.setItem('GEMINI_API_KEY', apiKey);
       setIsApiKeyPromptOpen(false);
       console.info('✅ Gemini API Key 已保存成功！');
-  };
+  }, []);
 
   const handleFitView = useCallback(() => {
       if (nodes.length === 0) {
@@ -621,6 +621,28 @@ export const App = () => {
           console.warn("History save failed:", e);
       }
   }, [historyManager]);
+
+  // 防抖版本的历史保存（1秒内多次调用只保存一次）
+  const debouncedSaveHistoryRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedSaveHistory = useCallback(() => {
+      if (debouncedSaveHistoryRef.current) {
+          clearTimeout(debouncedSaveHistoryRef.current);
+      }
+      debouncedSaveHistoryRef.current = setTimeout(() => {
+          saveHistory();
+          debouncedSaveHistoryRef.current = null;
+      }, 1000); // 1秒防抖
+  }, [saveHistory]);
+
+  // 组件卸载时保存待处理的历史
+  useEffect(() => {
+      return () => {
+          if (debouncedSaveHistoryRef.current) {
+              clearTimeout(debouncedSaveHistoryRef.current);
+              saveHistory();
+          }
+      };
+  }, [saveHistory]);
 
   const undo = useCallback(() => {
       const prevState = historyManager.undo();
@@ -749,20 +771,38 @@ export const App = () => {
       }
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = useCallback((e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = -e.deltaY * 0.001;
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         canvas.zoomCanvas(delta, x, y);
       } else {
         canvas.setPan(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
       }
-  };
+  }, [canvas]);
 
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+  // 手动添加非被动的 wheel 事件监听器（避免 preventDefault 警告）
+  const canvasRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+      const element = canvasRef.current;
+      if (!element) return;
+
+      const handleWheelEvent = (e: WheelEvent) => {
+          handleWheel(e);
+      };
+
+      // 添加非被动的监听器
+      element.addEventListener('wheel', handleWheelEvent, { passive: false });
+
+      return () => {
+          element.removeEventListener('wheel', handleWheelEvent);
+      };
+  }, [handleWheel]);
+
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
       if (contextMenu) setContextMenu(null);
       setSelectedGroupId(null);
 
@@ -795,7 +835,7 @@ export const App = () => {
               }
           }, 300);
       }
-  };
+  }, [contextMenu, canvas]);
 
   const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
       const { clientX, clientY } = e;
@@ -1019,7 +1059,7 @@ export const App = () => {
       }));
   }, [handleAssetGenerated]);
 
-  const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+  const handleReplaceFile = useCallback((e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
       const file = e.target.files?.[0];
       const targetId = replacementTargetRef.current;
       if (file && targetId) {
@@ -1031,8 +1071,8 @@ export const App = () => {
           };
           reader.readAsDataURL(file);
       }
-      e.target.value = ''; setContextMenu(null); replacementTargetRef.current = null; 
-  };
+      e.target.value = ''; setContextMenu(null); replacementTargetRef.current = null;
+  }, [handleNodeUpdate]);
 
   const getVisualPromptPrefix = (style: string, genre?: string, setting?: string): string => {
       let base = '';
@@ -3465,8 +3505,9 @@ COMPOSITION REQUIREMENTS:
   return (
     <div className="w-screen h-screen overflow-hidden bg-[#0a0a0c]">
       <div
+          ref={canvasRef}
           className={`w-full h-full overflow-hidden text-slate-200 selection:bg-cyan-500/30 ${canvas.isDraggingCanvas ? 'cursor-grabbing' : 'cursor-default'}`}
-          onMouseDown={handleCanvasMouseDown} onWheel={handleWheel} 
+          onMouseDown={handleCanvasMouseDown}
           onDoubleClick={(e) => { e.preventDefault(); if (e.detail > 1 && !selectionRect) { setContextMenu({ visible: true, x: e.clientX, y: e.clientY, id: '' }); setContextMenuTarget({ type: 'create' }); } }}
           onContextMenu={(e) => { e.preventDefault(); if(e.target === e.currentTarget) setContextMenu(null); }}
           onDragOver={handleCanvasDragOver} onDrop={handleCanvasDrop}

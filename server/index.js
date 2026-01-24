@@ -574,6 +574,247 @@ app.get('/api/yunwu/query', async (req, res) => {
   }
 });
 
+// ============================================================================
+// 大洋芋 API 代理
+// ============================================================================
+
+/**
+ * 大洋芋 API 代理 - 提交视频生成任务
+ * POST /api/dayuapi/create
+ */
+app.post('/api/dayuapi/create', async (req, res) => {
+  const startTime = Date.now();
+  const logId = `dayuapi-submit-${Date.now()}`;
+
+  try {
+    // 从请求头获取 API Key
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+      console.error(`[${logId}] ❌ 缺少 API Key`);
+      return res.status(401).json({
+        success: false,
+        error: '缺少 API Key，请在请求头中提供 X-API-Key'
+      });
+    }
+
+    const { prompt, model, image_url } = req.body;
+
+    console.log(`[${logId}] 📤 大洋芋 API 提交任务:`, {
+      prompt: prompt?.substring(0, 100) + '...',
+      model,
+      hasImageUrl: !!image_url,
+    });
+
+    // 构建大洋芋 API 请求
+    const dayuapiRequestBody = {
+      prompt,
+      model,
+      ...(image_url && { image_url })
+    };
+
+    console.log(`[${logId}] 📋 发送到大洋芋 API 的请求体:`, JSON.stringify(dayuapiRequestBody, null, 2));
+    console.log(`[${logId}] 🌐 请求 URL: https://api.dyuapi.com/v1/videos`);
+
+    const response = await fetch('https://api.dyuapi.com/v1/videos', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(dayuapiRequestBody),
+    });
+
+    const responseText = await response.text();
+    const durationMs = Date.now() - startTime;
+
+    console.log(`[${logId}] 📥 大洋芋 API 原始响应:`, {
+      status: response.status,
+      statusText: response.statusText,
+      responseText: responseText.substring(0, 500),
+      duration: `${durationMs}ms`,
+    });
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error(`[${logId}] ❌ 解析响应 JSON 失败:`, e.message);
+      data = { rawResponse: responseText };
+    }
+
+    if (!response.ok) {
+      console.error(`[${logId}] ❌ 大洋芋 API 错误:`, response.status, data);
+      return res.status(response.status).json({
+        success: false,
+        error: data.error || data.message || '大洋芋 API 提交失败',
+        details: data
+      });
+    }
+
+    console.log(`[${logId}] ✅ 大洋芋 API 成功:`, {
+      status: response.status,
+      taskId: data.id,
+      taskStatus: data.status,
+      duration: `${durationMs}ms`,
+    });
+
+    res.json(data);
+
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[${logId}] ❌ 大洋芋 API 代理错误 (${durationMs}ms):`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message || '大洋芋 API 代理提交失败'
+    });
+  }
+});
+
+/**
+ * 大洋芋 API 代理 - 查询任务状态
+ * GET /api/dayuapi/query
+ */
+app.get('/api/dayuapi/query', async (req, res) => {
+  const startTime = Date.now();
+  const logId = `dayuapi-query-${Date.now()}`;
+
+  try {
+    const taskId = req.query.id;
+
+    if (!taskId) {
+      console.error(`[${logId}] ❌ 缺少任务 ID`);
+      return res.status(400).json({
+        success: false,
+        error: '缺少任务 ID，请在查询参数中提供 id'
+      });
+    }
+
+    // 从请求头获取 API Key
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+      console.error(`[${logId}] ❌ 缺少 API Key`);
+      return res.status(401).json({
+        success: false,
+        error: '缺少 API Key，请在请求头中提供 X-API-Key'
+      });
+    }
+
+    console.log(`[${logId}] 🔍 大洋芋 API 查询任务:`, { taskId });
+
+    const response = await fetch(`https://api.dyuapi.com/v1/videos/${encodeURIComponent(taskId)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    const data = await response.json();
+
+    const durationMs = Date.now() - startTime;
+
+    console.log(`[${logId}] ✅ 大洋芋 API 查询响应:`, {
+      status: response.status,
+      taskId: data.id,
+      taskStatus: data.status,
+      progress: data.progress,
+      hasOutput: !!(data.output && data.output[0]?.url),
+      outputKeys: data.output ? Object.keys(data.output) : 'no output',
+      outputType: Array.isArray(data.output) ? 'array' : typeof data.output,
+      outputLength: Array.isArray(data.output) ? data.output.length : 'N/A',
+      fullOutput: data.output,
+      duration: `${durationMs}ms`,
+    });
+
+    if (!response.ok) {
+      console.error(`[${logId}] ❌ 大洋芋 API 查询错误:`, response.status, data);
+      return res.status(response.status).json({
+        success: false,
+        error: data.error || data.message || '大洋芋 API 查询失败',
+        details: data
+      });
+    }
+
+    res.json(data);
+
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[${logId}] ❌ 大洋芋 API 代理查询错误 (${durationMs}ms):`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message || '大洋芋 API 代理查询失败'
+    });
+  }
+});
+
+/**
+ * 大洋芋 API 代理 - 获取视频内容
+ * GET /api/dayuapi/content
+ */
+app.get('/api/dayuapi/content', async (req, res) => {
+  const startTime = Date.now();
+  const logId = `dayuapi-content-${Date.now()}`;
+
+  try {
+    const taskId = req.query.id;
+
+    if (!taskId) {
+      console.error(`[${logId}] ❌ 缺少任务 ID`);
+      return res.status(400).json({
+        success: false,
+        error: '缺少任务 ID，请在查询参数中提供 id'
+      });
+    }
+
+    // 从请求头获取 API Key
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) {
+      console.error(`[${logId}] ❌ 缺少 API Key`);
+      return res.status(401).json({
+        success: false,
+        error: '缺少 API Key，请在请求头中提供 X-API-Key'
+      });
+    }
+
+    console.log(`[${logId}] 📥 大洋芋 API 获取视频内容:`, { taskId });
+
+    const response = await fetch(`https://api.dyuapi.com/v1/videos/${encodeURIComponent(taskId)}/content`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    const data = await response.json();
+
+    const durationMs = Date.now() - startTime;
+
+    console.log(`[${logId}] ✅ 大洋芋 API 内容响应:`, {
+      status: response.status,
+      hasUrl: !!data.url,
+      duration: `${durationMs}ms`,
+    });
+
+    if (!response.ok) {
+      console.error(`[${logId}] ❌ 大洋芋 API 内容错误:`, response.status, data);
+      return res.status(response.status).json({
+        success: false,
+        error: data.error || data.message || '大洋芋 API 获取内容失败',
+        details: data
+      });
+    }
+
+    res.json(data);
+
+  } catch (error) {
+    const durationMs = Date.now() - startTime;
+    console.error(`[${logId}] ❌ 大洋芋 API 代理内容错误 (${durationMs}ms):`, error);
+    res.status(500).json({
+      success: false,
+      error: error.message || '大洋芋 API 代理获取内容失败'
+    });
+  }
+});
+
 /**
  * 错误处理
  */

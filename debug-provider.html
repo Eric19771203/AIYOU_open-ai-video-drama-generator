@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API 提供商调试工具</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a1a; color: #fff; }
+        .section { margin: 20px 0; padding: 15px; background: #2a2a2a; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #1a1a1a; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Sora API 提供商调试工具</h1>
+    
+    <div class="section">
+        <h2>1. 查看 localStorage 配置</h2>
+        <button onclick="checkConfig()">检查配置</button>
+        <pre id="config-output"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>2. 测试配置函数</h2>
+        <button onclick="testGetProvider()">测试 getSoraProvider()</button>
+        <button onclick="testGetApiKey()">测试 getProviderApiKey()</button>
+        <pre id="test-output"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>3. 设置云雾 API（测试）</h2>
+        <button onclick="setYunwu()">设置为云雾 API</button>
+        <button onclick="setSutu()">设置为速推 API</button>
+        <pre id="set-output"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>4. 清除配置</h2>
+        <button onclick="clearConfig()" style="background: #f44336;">清除所有配置</button>
+    </div>
+
+    <script type="module">
+        const SORA_CONFIG_KEY = 'sora_storage_config';
+        
+        function getSoraStorageConfig() {
+            const stored = localStorage.getItem(SORA_CONFIG_KEY);
+            if (!stored) return {};
+            try {
+                return JSON.parse(stored);
+            } catch (e) {
+                console.error('Failed to parse config:', e);
+                return {};
+            }
+        }
+        
+        function saveSoraStorageConfig(config) {
+            localStorage.setItem(SORA_CONFIG_KEY, JSON.stringify(config));
+        }
+        
+        function getSoraProvider() {
+            const config = getSoraStorageConfig();
+            return config.provider || 'sutu';
+        }
+        
+        function saveSoraProvider(provider) {
+            const config = getSoraStorageConfig();
+            config.provider = provider;
+            saveSoraStorageConfig(config);
+            console.log('[Debug] API 提供商已设置为:', provider);
+        }
+        
+        function getProviderApiKey() {
+            const provider = getSoraProvider();
+            const config = getSoraStorageConfig();
+            
+            if (provider === 'sutu') {
+                return config.apiKey || config.sutuApiKey || null;
+            } else if (provider === 'yunwu') {
+                return config.yunwuApiKey || null;
+            }
+            return null;
+        }
+        
+        window.checkConfig = function() {
+            const config = getSoraStorageConfig();
+            const output = document.getElementById('config-output');
+            output.innerHTML = '<span class="success">✅ 当前配置:</span>\n' + JSON.stringify(config, null, 2);
+        };
+        
+        window.testGetProvider = function() {
+            const provider = getSoraProvider();
+            const output = document.getElementById('test-output');
+            output.innerHTML = '<span class="success">✅ getSoraProvider() 返回:</span>\n' + provider + '\n\n' + 
+                '(当前选择的 API 提供商)';
+        };
+        
+        window.testGetApiKey = function() {
+            const provider = getSoraProvider();
+            const apiKey = getProviderApiKey();
+            const output = document.getElementById('test-output');
+            output.innerHTML = '<span class="success">✅ getProviderApiKey() 返回:</span>\n' + 
+                '提供商: ' + provider + '\n' +
+                'API Key: ' + (apiKey ? apiKey.substring(0, 20) + '...' : '未设置') + '\n' +
+                (apiKey ? '✅ API Key 已配置' : '❌ API Key 未配置');
+        };
+        
+        window.setYunwu = function() {
+            saveSoraProvider('yunwu');
+            const output = document.getElementById('set-output');
+            output.innerHTML = '<span class="success">✅ 已设置为云雾 API</span>\n' +
+                '请点击"检查配置"确认';
+        };
+        
+        window.setSutu = function() {
+            saveSoraProvider('sutu');
+            const output = document.getElementById('set-output');
+            output.innerHTML = '<span class="success">✅ 已设置为速推 API</span>\n' +
+                '请点击"检查配置"确认';
+        };
+        
+        window.clearConfig = function() {
+            localStorage.removeItem(SORA_CONFIG_KEY);
+            alert('配置已清除');
+            location.reload();
+        };
+        
+        // 页面加载时自动检查
+        window.checkConfig();
+    </script>
+</body>
+</html>

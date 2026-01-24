@@ -179,6 +179,7 @@ async function handleGenerateExpression(
   }
 
   const stylePrompt = getStylePrompt(node, allNodes);
+  const { style: styleType } = getUpstreamStyleContextFromNode(node, allNodes);
 
   try {
     const expressionSheet = await characterGenerationManager.generateExpression(
@@ -196,8 +197,8 @@ async function handleGenerateExpression(
             en: customPrompt
           };
         } else {
-          // 使用promptManager生成中英文提示词
-          expressionPromptPair = promptManager.buildExpressionPrompt(stylePrompt, state.profile);
+          // 使用promptManager生成中英文提示词，传递风格类型
+          expressionPromptPair = promptManager.buildExpressionPrompt(stylePrompt, state.profile, undefined, styleType);
           exprPrompt = expressionPromptPair.zh; // 使用中文版本生成
         }
 
@@ -277,6 +278,7 @@ async function handleGenerateThreeView(
   }
 
   const stylePrompt = getStylePrompt(node, allNodes);
+  const { style: styleType } = getUpstreamStyleContextFromNode(node, allNodes);
 
   try {
     const threeViewSheet = await characterGenerationManager.generateThreeView(
@@ -294,8 +296,8 @@ async function handleGenerateThreeView(
             en: customPrompt
           };
         } else {
-          // 使用promptManager生成中英文提示词
-          threeViewPromptPair = promptManager.buildThreeViewPrompt(stylePrompt, state.profile);
+          // 使用promptManager生成中英文提示词，传递风格类型
+          threeViewPromptPair = promptManager.buildThreeViewPrompt(stylePrompt, state.profile, undefined, styleType);
           viewPrompt = threeViewPromptPair.zh; // 使用中文版本生成
         }
 
@@ -439,14 +441,86 @@ function getStylePrompt(node: AppNode, allNodes: AppNode[]): string {
   return getVisualPromptPrefix(style, genre, setting);
 }
 
-function getUpstreamStyleContextFromNode(node: AppNode, allNodes: AppNode[]): { style: string; genre: string; setting: string } {
-  // 简化的实现，可以从原代码中提取
-  return { style: '3D', genre: '', setting: '' };
+function getUpstreamStyleContextFromNode(node: AppNode, allNodes: AppNode[]): { style: '3D' | 'REAL' | 'ANIME'; genre: string; setting: string } {
+  const inputs = node.inputs.map(i => allNodes.find(n => n.id === i)).filter(Boolean) as AppNode[];
+  let style: '3D' | 'REAL' | 'ANIME' = '3D'; // 默认3D风格
+  let genre = '';
+  let setting = '';
+
+  // 递归查找 SCRIPT_PLANNER
+  const findPlannerRecursive = (currentNode: AppNode, visited: Set<string> = new Set()): AppNode | null => {
+    if (visited.has(currentNode.id)) return null;
+    visited.add(currentNode.id);
+
+    if (currentNode.type === NodeType.SCRIPT_PLANNER) {
+      return currentNode;
+    }
+
+    // 检查当前节点的输入
+    const currentInputs = currentNode.inputs.map(i => allNodes.find(n => n.id === i)).filter(Boolean) as AppNode[];
+    for (const inputNode of currentInputs) {
+      const found = findPlannerRecursive(inputNode, visited);
+      if (found) return found;
+    }
+
+    return null;
+  };
+
+  // 首先尝试在输入中直接查找 SCRIPT_EPISODE 或 SCRIPT_PLANNER
+  const episodeNode = inputs.find(n => n.type === NodeType.SCRIPT_EPISODE);
+  const plannerNode = inputs.find(n => n.type === NodeType.SCRIPT_PLANNER);
+
+  if (episodeNode) {
+    if (episodeNode.data.scriptVisualStyle) style = episodeNode.data.scriptVisualStyle;
+    // 向上遍历查找 planner
+    const parentPlanner = allNodes.find(n => episodeNode.inputs.includes(n.id) && n.type === NodeType.SCRIPT_PLANNER);
+    if (parentPlanner) {
+      if (parentPlanner.data.scriptVisualStyle) style = parentPlanner.data.scriptVisualStyle;
+      genre = parentPlanner.data.scriptGenre || '';
+      setting = parentPlanner.data.scriptSetting || '';
+    }
+  } else if (plannerNode) {
+    if (plannerNode.data.scriptVisualStyle) style = plannerNode.data.scriptVisualStyle;
+    genre = plannerNode.data.scriptGenre || '';
+    setting = plannerNode.data.scriptSetting || '';
+  } else {
+    // 如果没有找到直接的 SCRIPT_EPISODE 或 SCRIPT_PLANNER，递归搜索上游
+    for (const inputNode of inputs) {
+      const foundPlanner = findPlannerRecursive(inputNode);
+      if (foundPlanner) {
+        if (foundPlanner.data.scriptVisualStyle) style = foundPlanner.data.scriptVisualStyle;
+        genre = foundPlanner.data.scriptGenre || '';
+        setting = foundPlanner.data.scriptSetting || '';
+        console.log(`[getUpstreamStyleContextFromNode] Found SCRIPT_PLANNER recursively:`, {
+          style,
+          genre,
+          setting,
+          plannerId: foundPlanner.id
+        });
+        break;
+      }
+    }
+  }
+
+  return { style, genre, setting };
 }
 
-function getVisualPromptPrefix(style: string, genre: string, setting: string): string {
-  // 仙侠3D风格 - 半写实唯美风格
-  return `Xianxia 3D animation character, semi-realistic style, Xianxia animation aesthetics, high precision 3D modeling, PBR shading with soft translucency, subsurface scattering, ambient occlusion, delicate and smooth skin texture (not overly realistic), flowing fabric clothing, individual hair strands, soft ethereal lighting, cinematic rim lighting with cool blue tones, otherworldly gaze, elegant and cold demeanor`;
+function getVisualPromptPrefix(style: '3D' | 'REAL' | 'ANIME', genre: string, setting: string): string {
+  // 根据风格类型返回对应的视觉提示词前缀
+  switch (style) {
+    case '3D':
+      // 仙侠3D风格 - 半写实唯美风格
+      return `Xianxia 3D animation character, semi-realistic style, Xianxia animation aesthetics, high precision 3D modeling, PBR shading with soft translucency, subsurface scattering, ambient occlusion, delicate and smooth skin texture (not overly realistic), flowing fabric clothing, individual hair strands, soft ethereal lighting, cinematic rim lighting with cool blue tones, otherworldly gaze, elegant and cold demeanor`;
+    case 'REAL':
+      // 真人写实风格
+      return `Professional portrait photography, photorealistic human, cinematic photography, professional headshot, DSLR quality, 85mm lens, sharp focus, realistic skin texture, visible pores, natural skin imperfections, subsurface scattering, natural lighting, studio portrait lighting, softbox lighting, rim light, golden hour`;
+    case 'ANIME':
+      // 2D动漫风格
+      return `Anime character, anime style, 2D anime art, manga illustration style, clean linework, crisp outlines, manga art style, detailed illustration, soft lighting, rim light, vibrant colors, cel shading lighting, flat shading`;
+    default:
+      // 默认3D风格
+      return `Xianxia 3D animation character, semi-realistic style, Xianxia animation aesthetics, high precision 3D modeling, PBR shading with soft translucency, subsurface scattering, ambient occlusion, delicate and smooth skin texture (not overly realistic), flowing fabric clothing, individual hair strands, soft ethereal lighting, cinematic rim lighting with cool blue tones, otherworldly gaze, elegant and cold demeanor`;
+  }
 }
 
 /**

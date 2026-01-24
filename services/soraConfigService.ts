@@ -290,6 +290,9 @@ export function getProviderApiKey(): string | null {
   } else if (provider === 'yunwu') {
     // 云雾 API 使用独立的 yunwuApiKey 字段
     return config.yunwuApiKey || null;
+  } else if (provider === 'dayuapi') {
+    // 大洋芋 API 使用独立的 dayuapiApiKey 字段
+    return config.dayuapiApiKey || null;
   }
 
   return null;
@@ -345,4 +348,20 @@ export function getYunwuApiKey(): string | null {
  */
 export function saveYunwuApiKey(apiKey: string): void {
   saveProviderApiKey('yunwu', apiKey);
+}
+
+/**
+ * 获取大洋芋 API Key
+ * @returns 大洋芋 API Key，如果未配置则返回 null
+ */
+export function getDayuapiApiKey(): string | null {
+  const config = getSoraStorageConfig();
+  return config.dayuapiApiKey || null;
+}
+
+/**
+ * 保存大洋芋 API Key
+ */
+export function saveDayuapiApiKey(apiKey: string): void {
+  saveProviderApiKey('dayuapi', apiKey);
 }

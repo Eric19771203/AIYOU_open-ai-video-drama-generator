@@ -1,3 +1,125 @@
 {
-  "videos": []
+  "videos": [
+    {
+      "id": "video-1769162679793",
+      "filename": "sora-video-1769162679793-1769162681117.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769162679793-1769162681117.mp4",
+      "taskId": "video-1769162679793",
+      "taskNumber": 3,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 近景，视平，固定运镜。绿洲内部，白天，核心控制台。陆远低头观察左腕，左腕上的“绿洲控制终端”闪烁着有节奏的幽蓝光芒，精密的机械结构在光线下微微颤动。视觉特效包含金属微距细节与呼吸灯特效。音效为规律的电子脉冲声。\n\nShot 3:\nduration: 3.0s\nScene: 全景，视平，固定运镜。绿洲内部，白天，全景窗前。陆远背对镜头站立，面向巨大的透明落地窗。窗外是迷雾中若隐若现的衰败城市，幸存者在废墟中爬行。陆远背影笔直且纹丝不动。视觉呈现室内外强烈冷暖对比及窗面反射效果。音效为窗外微弱风声与室内静谧的对比。\n\nShot 4:\nduration: 2.0s\nScene: 大特写，视平，固定运镜。绿洲内部，白天，核心控制台。陆远盯着全息屏上的数值，双眼微眯，眼神中透露出绝对的理性，无视远方的惨剧。视觉呈现瞳孔细节刻画与高分辨率材质。音效为极其轻微且平稳的呼吸声。\n\nShot 5:\nduration: 3.0s\nSc",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-5c70-7280-89a9-0020c4288ce8%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=3d249c53-07fa-4ba4-9b65-0bf8eb4ea46a&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A46%3A34Z&ske=2026-01-30T01%3A51%3A34Z&sks=b&skv=2024-08-04&sig=Chp1qaBtkjaPBbqTsm9le%2BrVmrT1wrQw3An%2BwojeVxs%3D&ac=oaisdsorprsouthcentralus",
+      "fileSize": 6639682,
+      "createdAt": "2026-01-23T10:04:52.874Z"
+    },
+    {
+      "id": "video-1769162540896",
+      "filename": "sora-video-1769162540896-1769162542492.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769162540896-1769162542492.mp4",
+      "taskId": "video-1769162540896",
+      "taskNumber": 3,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 近景，视平，固定运镜。绿洲内部，白天，核心控制台。陆远低头观察左腕，左腕上的“绿洲控制终端”闪烁着有节奏的幽蓝光芒，精密的机械结构在光线下微微颤动。视觉特效包含金属微距细节与呼吸灯特效。音效为规律的电子脉冲声。\n\nShot 3:\nduration: 3.0s\nScene: 全景，视平，固定运镜。绿洲内部，白天，全景窗前。陆远背对镜头站立，面向巨大的透明落地窗。窗外是迷雾中若隐若现的衰败城市，幸存者在废墟中爬行。陆远背影笔直且纹丝不动。视觉呈现室内外强烈冷暖对比及窗面反射效果。音效为窗外微弱风声与室内静谧的对比。\n\nShot 4:\nduration: 2.0s\nScene: 大特写，视平，固定运镜。绿洲内部，白天，核心控制台。陆远盯着全息屏上的数值，双眼微眯，眼神中透露出绝对的理性，无视远方的惨剧。视觉呈现瞳孔细节刻画与高分辨率材质。音效为极其轻微且平稳的呼吸声。\n\nShot 5:\nduration: 3.0s\nSc",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-5c70-7280-89a9-0020c4288ce8%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=3d249c53-07fa-4ba4-9b65-0bf8eb4ea46a&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A46%3A34Z&ske=2026-01-30T01%3A51%3A34Z&sks=b&skv=2024-08-04&sig=Chp1qaBtkjaPBbqTsm9le%2BrVmrT1wrQw3An%2BwojeVxs%3D&ac=oaisdsorprsouthcentralus",
+      "fileSize": 6651129,
+      "createdAt": "2026-01-23T10:05:11.216Z"
+    },
+    {
+      "id": "video-1769162726056",
+      "filename": "sora-video-1769162726056-1769162726928.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769162726056-1769162726928.mp4",
+      "taskId": "video-1769162726056",
+      "taskNumber": 1,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 大远景鸟瞰视角，镜头向下滑行，展现死寂的废土都市。铅灰色的致死迷雾笼罩，摩天大楼的钢筋残骸如断裂的巨兽肋骨。3D写实风格，体积雾特效及颗粒感滤镜，画面呈现压抑的灰调。伴随低沉的狂风呼啸与远景建筑废墟倒塌声。\n\nShot 3:\nduration: 3.0s\nScene: 远景视平视角，镜头急速前冲穿透粘稠如液体的迷雾。残破的霓虹灯牌飞速掠过，光影在浓雾中产生丁达尔效应。动态模糊与强烈的镜头拉伸感，赛博朋克废土色调。音效呈现气流穿梭的爆音与高频电子干扰音。\n\nShot 4:\nduration: 2.0s\nScene: 全景视平视角，镜头冲入绿洲内部空间后转为固定。画面由灰暗瞬间转为纯净的白色高调场，空气清透，充满科技感的极简主义建筑线条。极清画质，呈现3D建模质感。音效瞬间寂静，伴随轻微的机械运行嗡鸣。\n\nShot 5:\nduration: 3.0s\nScene: 全景视平视角，镜头缓慢推进。陆远身着科技质感长风衣，神",
+      "originalUrl": "https://filenest.oss-us-west-1.aliyuncs.com/uploads/d9af0e44-0883-4cdc-9f79-5b2d7082e8a6.mp4",
+      "fileSize": 7880041,
+      "createdAt": "2026-01-23T10:05:29.355Z"
+    },
+    {
+      "id": "video-1769171824560",
+      "filename": "sora-video-1769171824560-1769171825464.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769171824560-1769171825464.mp4",
+      "taskId": "video-1769171824560",
+      "taskNumber": 3,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 近景，视平，固定运镜。绿洲内部，白天，核心控制台。陆远低头观察左腕，左腕上的“绿洲控制终端”闪烁着有节奏的幽蓝光芒，精密的机械结构在光线下微微颤动。视觉特效包含金属微距细节与呼吸灯特效。音效为规律的电子脉冲声。\n\nShot 3:\nduration: 3.0s\nScene: 全景，视平，固定运镜。绿洲内部，白天，全景窗前。陆远背对镜头站立，面向巨大的透明落地窗。窗外是迷雾中若隐若现的衰败城市，幸存者在废墟中爬行。陆远背影笔直且纹丝不动。视觉呈现室内外强烈冷暖对比及窗面反射效果。音效为窗外微弱风声与室内静谧的对比。\n\nShot 4:\nduration: 2.0s\nScene: 大特写，视平，固定运镜。绿洲内部，白天，核心控制台。陆远盯着全息屏上的数值，双眼微眯，眼神中透露出绝对的理性，无视远方的惨剧。视觉呈现瞳孔细节刻画与高分辨率材质。音效为极其轻微且平稳的呼吸声。\n\nShot 5:\nduration: 3.0s\nSc",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-fa70-7283-a579-f3d0b70f73c1%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=aa5ddad1-c91a-4f0a-9aca-e20682cc8969&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A43%3A55Z&ske=2026-01-30T01%3A48%3A55Z&sks=b&skv=2024-08-04&sig=kVmljZsYL3oF1uqM/nO/0hmca1b5gvWwF%2BF/wnzwny0%3D&ac=oaisdsorprwestus2",
+      "fileSize": 5874973,
+      "createdAt": "2026-01-23T12:37:08.700Z"
+    },
+    {
+      "id": "video-1769171829018",
+      "filename": "sora-video-1769171829018-1769171829284.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769171829018-1769171829284.mp4",
+      "taskId": "video-1769171829018",
+      "taskNumber": 1,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 大远景鸟瞰镜头，向下滑行。死寂的废土都市被铅灰色的致死迷雾笼罩，摩天大楼的钢筋残骸像断裂的巨兽肋骨伸向天空，画面呈现压抑的灰调。3D写实风格，带有体积雾特效和颗粒感滤镜。音效为低沉的狂风呼啸及远景处的建筑废墟倒塌声。\n\nShot 3:\nduration: 3.0s\nScene: 远景视平镜头，急速前冲，伴随强烈的动态模糊和镜头拉伸感。镜头快速穿透粘稠如液体的迷雾，残破的霓虹灯牌残骸飞速掠过，光影产生丁达尔效应。赛博朋克废土色调。音效为气流穿梭的爆音与高频电子干扰音。\n\nShot 4:\nduration: 2.0s\nScene: 全景视平镜头，冲入后转固定。镜头撞入一片纯净的白色空间，与外部灰暗形成强烈对比。空气清透，充满科技感的极简主义建筑线条，高调白场，极清画质，呈现3D建模质感。音效为瞬间寂静及轻微的机械运行嗡鸣声。\n\nShot 5:\nduration: 3.0s\nScene: 全景视平镜头，缓慢推进。陆远身着",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-5bf8-7284-a22e-415d1a554857%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A36%3A00Z&ske=2026-01-30T01%3A41%3A00Z&sks=b&skv=2024-08-04&sig=DXVEJm19qhJNhkOeUdzxhw9OyxUrhKLZ3KuHBoeweas%3D&ac=oaisdsorprcentralus",
+      "fileSize": 8258167,
+      "createdAt": "2026-01-23T12:37:11.538Z"
+    },
+    {
+      "id": "video-1769171842737",
+      "filename": "sora-video-1769171842737-1769171843907.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769171842737-1769171843907.mp4",
+      "taskId": "video-1769171842737",
+      "taskNumber": 3,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。近景，视平，固定镜头。陆远左腕上的“绿洲控制终端”正闪烁着有节奏的幽蓝光芒，精密的机械结构在光线下微微颤动。视觉特效包含金属微距细节与呼吸灯特效。音效为规律的电子脉冲声。\n\nShot 3:\nduration: 3.0s\nScene: 绿洲内部全景窗前，白天。全景，视平，固定镜头。陆远背对镜头站立，面向巨大的透明落地窗，窗外是迷雾中若隐若现的衰败城市，隐约可见幸存者在废墟中爬行，陆远的背影笔直且纹丝不动。视觉呈现室内外强烈冷暖对比及窗面反射效果。音效为窗外微弱的风声与室内静谧的对比。\n\nShot 4:\nduration: 2.0s\nScene: 绿洲内部核心控制台，白天。大特写，视平，固定镜头。陆远眼神中透露出绝对的理性，盯着全息屏上的数值，双眼微眯，完全无视了远方正在发生的惨剧。视觉呈现瞳孔细节刻画与高分辨率材质。音效为极其轻微且平稳的呼吸声。\n\nShot 5:\nduration: 3.0",
+      "originalUrl": "https://filenest.oss-us-west-1.aliyuncs.com/uploads/de2e9e07-f745-41cd-9e2f-8362d89b57b4.mp4",
+      "fileSize": 6049222,
+      "createdAt": "2026-01-23T12:37:27.356Z"
+    },
+    {
+      "id": "video-1769171821204",
+      "filename": "sora-video-1769171821204-1769171822748.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769171821204-1769171822748.mp4",
+      "taskId": "video-1769171821204",
+      "taskNumber": 5,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 近景，视平角度，缓推镜头。绿洲内部白天核心控制台。陆远凝视着屏幕，神情若有所思，正在评估这个“闯入者”的价值。全息投影倒映在陆远的瞳孔中心。环境音逐渐增强，预示紧张感。\n\nShot 3:\nduration: 3.0s\nScene: 中景，视平角度，固定镜头。绿洲内部白天核心控制台。陆远伸出手，指尖悬停在全息按钮“接纳”指令上方，在距离屏幕几厘米处静止，空间内充满了压抑的肃杀感。全息按键呼吸闪烁。急促而尖锐的单音节提示音。\n\nShot 4:\nduration: 3.0s\nScene: 特写，低位仰拍，固定镜头。绿洲内部白天核心控制台。陆远的嘴角微微勾起一抹危险且玩味的弧度，眼神中闪过冷酷计算后的最终决定。冷色光在脸上流转，强调邪魅表情。沉重的低音贝斯声突然响起。\n\nShot 5:\nduration: 2.0s\nScene: 全景，远景视平角度，固定镜头。绿洲入口白天屏障处。沈悦倒在屏障前，电磁光芒突然发生剧烈闪烁，屏",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-ee1c-7283-bc79-6c16077ff8f0%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=5e5fc900-07cf-43e7-ab5b-314c0d877bb0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A45%3A55Z&ske=2026-01-30T01%3A50%3A55Z&sks=b&skv=2024-08-04&sig=AxqIgIWPP5q%2BRKedL9CuQrTh30NJ5jPlRR/nO54Kcoo%3D&ac=oaisdsorprwestus2",
+      "fileSize": 3699396,
+      "createdAt": "2026-01-23T12:37:48.333Z"
+    },
+    {
+      "id": "video-1769171838468",
+      "filename": "sora-video-1769171838468-1769171840068.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769171838468-1769171840068.mp4",
+      "taskId": "video-1769171838468",
+      "taskNumber": 1,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 大远景鸟瞰镜头，向下滑行。死寂的废土都市被铅灰色的致死迷雾笼罩，摩天大楼的钢筋残骸像断裂的巨兽肋骨伸向天空，画面呈现压抑的灰调。3D写实风格，带有体积雾特效和颗粒感滤镜。音效为低沉的狂风呼啸及远景处的建筑废墟倒塌声。\n\nShot 3:\nduration: 3.0s\nScene: 远景视平镜头，急速前冲，伴随强烈的动态模糊和镜头拉伸感。镜头快速穿透粘稠如液体的迷雾，残破的霓虹灯牌残骸飞速掠过，光影产生丁达尔效应。赛博朋克废土色调。音效为气流穿梭的爆音与高频电子干扰音。\n\nShot 4:\nduration: 2.0s\nScene: 全景视平镜头，冲入后转固定。镜头撞入一片纯净的白色空间，与外部灰暗形成强烈对比。空气清透，充满科技感的极简主义建筑线条，高调白场，极清画质，呈现3D建模质感。音效为瞬间寂静及轻微的机械运行嗡鸣声。\n\nShot 5:\nduration: 3.0s\nScene: 全景视平镜头，缓慢推进。陆远身着",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-3674-7283-82d2-35a6d29b3af1%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=8ebb0df1-a278-4e2e-9c20-f2d373479b3a&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A33%3A18Z&ske=2026-01-30T01%3A38%3A18Z&sks=b&skv=2024-08-04&sig=ljMVfnbXlU7exAhNYOroHRhPqYTWj0HMJhHPXVBNhhc%3D&ac=oaisdsorprwestus2",
+      "fileSize": 7860045,
+      "createdAt": "2026-01-23T12:39:03.488Z"
+    },
+    {
+      "id": "video-1769175512106",
+      "filename": "sora-video-1769175512106-1769175513845.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769175512106-1769175513845.mp4",
+      "taskId": "video-1769175512106",
+      "taskNumber": 5,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。近景，视平位缓推镜头。陆远凝视着屏幕，神情若有所思，正在评估“闯入者”的价值。全息投影清晰地倒映在陆远的瞳孔中心，氛围凝重。\n\nShot 3:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。中景，视平位固定镜头。陆远伸出手，指尖悬停在全息按钮“接纳”指令上方几厘米处静止，空间内充满压抑的肃杀感。全息按键呈现呼吸灯般的闪烁特效。\n\nShot 4:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。特写，低位仰拍固定镜头。陆远的嘴角微微勾起一抹危险且玩味的弧度，眼神中闪过冷酷计算后的兴趣。冷色光影在脸上流转，强调其邪魅的表情。\n\nShot 5:\nduration: 2.0s\nScene: 绿洲入口屏障处，白天。全景，远景视平位固定镜头。沈悦倒在屏障前，电磁光芒剧烈闪烁，密不可透的屏障瞬间撕开缺口，白光伴随粒子流吞噬了她的身影，画面强光过曝转场。\n\nS",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-fdf8-7283-8780-a30ef220ac30%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=3d249c53-07fa-4ba4-9b65-0bf8eb4ea46a&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A45%3A38Z&ske=2026-01-30T01%3A50%3A38Z&sks=b&skv=2024-08-04&sig=YPSFBHChYRQ3TRPh8fgPqM7p1rFihgmT1hhtY8lHewI%3D&ac=oaisdsorprwestus2",
+      "fileSize": 5211133,
+      "createdAt": "2026-01-23T13:38:38.532Z"
+    },
+    {
+      "id": "video-1769175506325",
+      "filename": "sora-video-1769175506325-1769175507315.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769175506325-1769175507315.mp4",
+      "taskId": "video-1769175506325",
+      "taskNumber": 5,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。近景，视平位缓推镜头。陆远凝视着屏幕，神情若有所思，正在评估“闯入者”的价值。全息投影清晰地倒映在陆远的瞳孔中心，氛围凝重。\n\nShot 3:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。中景，视平位固定镜头。陆远伸出手，指尖悬停在全息按钮“接纳”指令上方几厘米处静止，空间内充满压抑的肃杀感。全息按键呈现呼吸灯般的闪烁特效。\n\nShot 4:\nduration: 3.0s\nScene: 绿洲内部核心控制台，白天。特写，低位仰拍固定镜头。陆远的嘴角微微勾起一抹危险且玩味的弧度，眼神中闪过冷酷计算后的兴趣。冷色光影在脸上流转，强调其邪魅的表情。\n\nShot 5:\nduration: 2.0s\nScene: 绿洲入口屏障处，白天。全景，远景视平位固定镜头。沈悦倒在屏障前，电磁光芒剧烈闪烁，密不可透的屏障瞬间撕开缺口，白光伴随粒子流吞噬了她的身影，画面强光过曝转场。\n\nS",
+      "originalUrl": "https://videos-jp.ss3.life/az/files/00000000-ac00-7283-8195-7e2979ed050a%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=cfbc986b-d2bc-4088-8b71-4f962129715b&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A41%3A59Z&ske=2026-01-30T01%3A46%3A59Z&sks=b&skv=2024-08-04&sig=soyRcIzLi3J2OEdHMIpnRoGQr6%2B9L%2BjvlydbU/d%2BfVg%3D&ac=oaisdsorprwestus2",
+      "fileSize": 6387518,
+      "createdAt": "2026-01-23T13:38:49.324Z"
+    },
+    {
+      "id": "video-1769175463095",
+      "filename": "sora-video-1769175463095-1769175464842.mp4",
+      "filepath": "/Volumes/光波/哎呦漫剧生成/videos/sora-video-1769175463095-1769175464842.mp4",
+      "taskId": "video-1769175463095",
+      "taskNumber": 5,
+      "soraPrompt": "Shot 1:\nduration: 1.0s\nScene: 完全黑色的空镜头，纯黑画面，无任何视觉内容，无声音\n\nShot 2:\nduration: 3.0s\nScene: 近景，视平角度，缓推镜头。绿洲内部白天核心控制台。陆远凝视着屏幕，神情若有所思，正在评估这个“闯入者”的价值。全息投影倒映在陆远的瞳孔中心。环境音逐渐增强，预示紧张感。\n\nShot 3:\nduration: 3.0s\nScene: 中景，视平角度，固定镜头。绿洲内部白天核心控制台。陆远伸出手，指尖悬停在全息按钮“接纳”指令上方，在距离屏幕几厘米处静止，空间内充满了压抑的肃杀感。全息按键呼吸闪烁。急促而尖锐的单音节提示音。\n\nShot 4:\nduration: 3.0s\nScene: 特写，低位仰拍，固定镜头。绿洲内部白天核心控制台。陆远的嘴角微微勾起一抹危险且玩味的弧度，眼神中闪过冷酷计算后的最终决定。冷色光在脸上流转，强调邪魅表情。沉重的低音贝斯声突然响起。\n\nShot 5:\nduration: 2.0s\nScene: 全景，远景视平角度，固定镜头。绿洲入口白天屏障处。沈悦倒在屏障前，电磁光芒突然发生剧烈闪烁，屏",
+      "originalUrl": "https://videos-us3.ss2.life/az/files/00000000-f7cc-7284-9648-26ac366baff7%2Fraw?se=2026-01-25T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&skoid=5e5fc900-07cf-43e7-ab5b-314c0d877bb0&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-01-23T01%3A43%3A11Z&ske=2026-01-30T01%3A48%3A11Z&sks=b&skv=2024-08-04&sig=%2BxNxOL0hgOj4e%2Bh1eVU%2BsIegdVBBB4ghKkRgGcc4b6U%3D&ac=oaisdsorprcentralus",
+      "fileSize": 8884540,
+      "createdAt": "2026-01-23T13:39:15.224Z"
+    }
+  ]
 }

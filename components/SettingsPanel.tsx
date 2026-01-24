@@ -18,12 +18,12 @@ import {
   resetModelStats
 } from '../services/modelFallback';
 import { StorageSettingsPanel } from './StorageSettingsPanel';
-import { getSoraStorageConfig, saveSoraStorageConfig, getOSSConfig, saveOSSConfig, DEFAULT_SORA_MODELS, getSoraProvider, saveSoraProvider, getYunwuApiKey } from '../services/soraConfigService';
+import { getSoraStorageConfig, saveSoraStorageConfig, getOSSConfig, saveOSSConfig, DEFAULT_SORA_MODELS, getSoraProvider, saveSoraProvider, getYunwuApiKey, getDayuapiApiKey } from '../services/soraConfigService';
 import { testOSSConnection } from '../services/ossService';
 import { OSSConfig } from '../types';
 
 // API 提供商类型
-type SoraProviderType = 'sutu' | 'yunwu';
+type SoraProviderType = 'sutu' | 'yunwu' | 'dayuapi';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -66,6 +66,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   const [soraProvider, setSoraProviderState] = useState<SoraProviderType>('sutu');
   const [soraApiKey, setSoraApiKey] = useState('');
   const [yunwuApiKey, setYunwuApiKey] = useState('');
+  const [dayuapiApiKey, setDayuapiApiKey] = useState('');
   const [ossConfig, setOssConfig] = useState<OSSConfig>({
     provider: 'imgbb',
     imgbbApiKey: '',
@@ -77,6 +78,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
   });
   const [showSoraApiKey, setShowSoraApiKey] = useState(false);
   const [showYunwuApiKey, setShowYunwuApiKey] = useState(false);
+  const [showDayuapiApiKey, setShowDayuapiApiKey] = useState(false);
   const [showOssHelp, setShowOssHelp] = useState(false);
 
   // OSS 测试状态
@@ -154,6 +156,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
     const savedYunwuKey = getYunwuApiKey();
     if (savedYunwuKey) {
       setYunwuApiKey(savedYunwuKey);
+    }
+
+    // 加载大洋芋 API Key
+    const savedDayuapiKey = getDayuapiApiKey();
+    if (savedDayuapiKey) {
+      setDayuapiApiKey(savedDayuapiKey);
     }
 
     // 加载 OSS 配置
@@ -247,6 +255,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
       apiKey: soraProvider === 'sutu' ? soraApiKey : savedConfig.apiKey,
       sutuApiKey: soraProvider === 'sutu' ? soraApiKey : savedConfig.sutuApiKey,
       yunwuApiKey: yunwuApiKey,
+      dayuapiApiKey: dayuapiApiKey,
     });
 
     // 保存 OSS 配置
@@ -686,9 +695,12 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                 >
                   <option value="sutu">速推 API (Sutu)</option>
                   <option value="yunwu">云雾 API (Yunwu)</option>
+                  <option value="dayuapi">大洋芋 API (Dayuapi)</option>
                 </select>
                 <p className="text-[10px] text-slate-500">
-                  {soraProvider === 'sutu' ? '速推 API：原有接口，稳定性一般' : '云雾 API：新增接口，稳定性较好（推荐）'}
+                  {soraProvider === 'sutu' ? '速推 API：原有接口，稳定性一般' :
+                   soraProvider === 'yunwu' ? '云雾 API：新增接口，稳定性较好' :
+                   '大洋芋 API：通过模型名称控制参数，支持 10/15/25 秒视频'}
                 </p>
               </div>
 
@@ -752,6 +764,36 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                 </div>
               )}
 
+              {/* 大洋芋 API Key */}
+              {soraProvider === 'dayuapi' && (
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="text-sm font-medium text-slate-300">大洋芋 API Key</span>
+                    <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type={showDayuapiApiKey ? 'text' : 'password'}
+                        value={dayuapiApiKey}
+                        onChange={(e) => setDayuapiApiKey(e.target.value)}
+                        placeholder="输入大洋芋 API Key"
+                        className="w-full px-4 py-2.5 bg-black/20 border border-white/10 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-green-500/50"
+                      />
+                      <button
+                        onClick={() => setShowDayuapiApiKey(!showDayuapiApiKey)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                      >
+                        {showDayuapiApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    在 <a href="https://api.dyuapi.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">大洋芋官网</a> 获取 API Key
+                  </p>
+                </div>
+              )}
+
               {/* API 提供商说明 */}
               <div className="p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
                 <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
@@ -774,6 +816,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
                       <p className="font-medium text-white">云雾 API (Yunwu)</p>
                       <p className="text-[10px] text-slate-400 mt-1">
                         新增接口，稳定性较好，推荐使用
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-white">大洋芋 API (Dayuapi)</p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        通过模型名称控制参数，支持 10/15/25 秒视频，25 秒自动使用高清模式
                       </p>
                     </div>
                   </div>

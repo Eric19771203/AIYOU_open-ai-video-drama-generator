@@ -1244,6 +1244,25 @@ export const App = () => {
 
   const handleNodeMouseDown = useCallback((e: React.MouseEvent, id: string) => {
       e.stopPropagation();
+
+      // 检查是否点击了交互元素，如果是则不触发节点拖拽
+      const target = e.target as HTMLElement;
+      const tagName = target.tagName;
+      const targetType = target.getAttribute('type');
+
+      // 交互元素列表：range input、普通input、textarea、select、button、a标签
+      const isInteractiveElement =
+          (tagName === 'INPUT' && (targetType === 'range' || targetType === 'text' || targetType === 'number' || targetType === 'checkbox' || targetType === 'radio')) ||
+          tagName === 'TEXTAREA' ||
+          tagName === 'SELECT' ||
+          tagName === 'BUTTON' ||
+          tagName === 'A';
+
+      if (isInteractiveElement) {
+          // 点击的是交互元素，不触发节点拖拽
+          return;
+      }
+
       const isAlreadySelected = selectedNodeIds.includes(id);
 
       // 如果按住shift/meta/ctrl键，切换选中状态

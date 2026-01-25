@@ -129,9 +129,16 @@ export interface CharacterProfile {
     status?: 'IDLE' | 'GENERATING' | 'SUCCESS' | 'ERROR';
     error?: string;
     isSaved?: boolean;
+    // Individual task statuses
+    profileStatus?: 'PENDING' | 'GENERATING' | 'SUCCESS' | 'FAILED';
+    expressionStatus?: 'PENDING' | 'GENERATING' | 'SUCCESS' | 'FAILED';
+    threeViewStatus?: 'PENDING' | 'GENERATING' | 'SUCCESS' | 'FAILED';
     // Generation flags
     isGeneratingExpression?: boolean;
     isGeneratingThreeView?: boolean;
+    // Individual task errors
+    expressionError?: string;
+    threeViewError?: string;
 }
 
 export interface AppNode {

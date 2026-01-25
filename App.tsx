@@ -49,41 +49,21 @@ const COLLISION_PADDING = 24; // Spacing when nodes bounce off each other
 
 /**
  * 保存视频到服务器数据库
+ * 注意：已禁用 IndexedDB 保存，直接使用 Sora URL 避免卡顿
  * @param videoUrl 视频 URL
  * @param taskId 任务 ID
  * @param taskNumber 任务编号
  * @param soraPrompt Sora 提示词
+ * @returns videoId (直接返回 taskId)
  */
-async function saveVideoToDatabase(videoUrl: string, taskId: string, taskNumber: number, soraPrompt: string) {
-    try {
-        console.log('[视频保存] 正在保存视频到数据库...', {
-            taskId,
-            taskNumber,
-            videoUrl: videoUrl.substring(0, 100) + '...'
-        });
-
-        const response = await fetch('http://localhost:3001/api/videos/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                videoUrl,
-                taskId,
-                taskNumber,
-                soraPrompt
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            console.log('[视频保存] ✅ 视频已保存到数据库:', result);
-        } else {
-            console.error('[视频保存] ❌ 保存失败:', result.error);
-        }
-    } catch (error) {
-        console.error('[视频保存] ❌ 保存失败:', error);
-        // 不阻塞主流程，静默失败
-    }
+async function saveVideoToDatabase(videoUrl: string, taskId: string, taskNumber: number, soraPrompt: string): Promise<string> {
+    // 直接返回 taskId，不保存到 IndexedDB 避免阻塞主线程
+    console.log('[视频保存] 使用 Sora URL，跳过 IndexedDB 保存', {
+        taskId,
+        taskNumber,
+        videoUrl: videoUrl.substring(0, 100) + '...'
+    });
+    return taskId;
 }
 
 // Helper to get image dimensions
@@ -772,6 +752,14 @@ export const App = () => {
   };
 
   const handleWheel = useCallback((e: WheelEvent) => {
+      // 检查事件目标是否在节点内
+      const target = e.target as HTMLElement;
+      const nodeElement = target.closest('[data-node-container]');
+      if (nodeElement) {
+        // 事件发生在节点内，不移动画布
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         e.preventDefault();
         const delta = -e.deltaY * 0.001;
@@ -1743,6 +1731,14 @@ export const App = () => {
                     );
 
                     if (result.status === 'completed') {
+                        // 不保存到IndexedDB，直接使用 Sora URL
+                        saveVideoToDatabase(
+                            result.videoUrl,
+                            result.taskId,
+                            taskGroup.taskNumber,
+                            taskGroup.soraPrompt
+                        );
+
                         // Create child node for the video
                         const childNodeId = `n-sora-child-${Date.now()}`;
                         const childNode: AppNode = {
@@ -1761,7 +1757,8 @@ export const App = () => {
                                 duration: result.duration,
                                 quality: result.quality,
                                 isCompliant: result.isCompliant,
-                                violationReason: result.violationReason
+                                violationReason: result.violationReason,
+                                soraTaskId: result.taskId
                             },
                             inputs: [node.id]
                         };
@@ -1982,10 +1979,11 @@ export const App = () => {
                   const newChildNodes: AppNode[] = [];
                   const newConnections: Connection[] = [];
 
-                  results.forEach((result, index) => {
+                  // 使用 for...of 循环以支持 await
+                  for (const [index, result] of results.entries()) {
                       const taskGroup = taskGroupsToGenerate[index];
                       if (result.status === 'completed' && result.videoUrl) {
-                          // 保存视频到服务器数据库，使用 result.taskId 而不是 taskGroup.soraTaskId
+                          // 不保存到IndexedDB，直接使用 Sora URL
                           saveVideoToDatabase(result.videoUrl, result.taskId, taskGroup.taskNumber, taskGroup.soraPrompt);
 
                           // Create child node
@@ -2007,14 +2005,14 @@ export const App = () => {
                                   quality: result.quality,
                                   isCompliant: result.isCompliant,
                                   violationReason: result.violationReason,
-                                  soraTaskId: result.taskId  // 使用 result.taskId 用于下载
+                                  soraTaskId: result.taskId
                               },
                               inputs: [node.id]
                           };
                           newChildNodes.push(childNode);
                           newConnections.push({ from: node.id, to: childNodeId });
                       }
-                  });
+                  }
 
                   // Update task groups with results
                   const finalTaskGroups = taskGroups.map(tg => {
@@ -2153,11 +2151,15 @@ export const App = () => {
                       const newChildNodes: AppNode[] = [];
                       const newConnections: Connection[] = [];
 
-                      results.forEach((result, index) => {
+                      // 使用 for...of 循环以支持 await
+                      for (const [index, result] of results.entries()) {
                           // 只有当状态完成且有有效videoUrl时才创建子节点
                           if (result.status === 'completed' && result.videoUrl) {
                               const childNodeId = `n-sora-child-${Date.now()}-${index}`;
                               const taskGroup = updatedTaskGroups[index];
+
+                              // 不保存到IndexedDB，直接使用 Sora URL
+                              saveVideoToDatabase(result.videoUrl, result.taskId, taskGroup.taskNumber, taskGroup.soraPrompt);
 
                               const childNode: AppNode = {
                                   id: childNodeId,
@@ -2175,7 +2177,8 @@ export const App = () => {
                                       duration: result.duration,
                                       quality: result.quality,
                                       isCompliant: result.isCompliant,
-                                      violationReason: result.violationReason
+                                      violationReason: result.violationReason,
+                                      soraTaskId: result.taskId
                                   },
                                   inputs: [node.id]
                               };
@@ -2188,7 +2191,7 @@ export const App = () => {
                               newChildNodes.push(childNode);
                               newConnections.push(newConnection);
                           }
-                      });
+                      }
 
                       if (newChildNodes.length > 0) {
                           try { saveHistory(); } catch (e) { }
@@ -2450,7 +2453,7 @@ export const App = () => {
                           newGeneratedChars[idx] = { ...libChar.data, id: `char-inst-${Date.now()}-${name}`, status: 'SUCCESS' };
                       }
                   } else if (config.method === 'SUPPORTING_ROLE') {
-                      // SUPPORTING CHARACTER: Use recursive context for generation
+                      // SUPPORTING CHARACTER: 只生成基础信息，不生成图片
                       const context = recursiveUpstreamTexts.join('\n');
 
                       console.log('[CHARACTER_NODE] Generating supporting character with recursive context:', {
@@ -2460,23 +2463,21 @@ export const App = () => {
 
                       try {
                           // Import the supporting character generator
-                          const { generateSupportingCharacter, generateImageFromText, detectTextInImage } = await import('./services/geminiService');
+                          const { generateSupportingCharacter } = await import('./services/geminiService');
 
                           // Step 1: Generate simplified profile
                           const profile = await generateSupportingCharacter(
                               name,
                               context,
                               stylePrompt,
-                              getUserDefaultModel('text'),  // 总是使用最新的模型配置
+                              getUserDefaultModel('text'),
                               { nodeId: id, nodeType: node.type }
                           );
 
                           const idx = newGeneratedChars.findIndex(c => c.name === name);
-                          // ✅ Phase 1 complete - only generate profile info, no images
                           const existingChar = newGeneratedChars[idx];
                           newGeneratedChars[idx] = {
                               ...profile,
-                              // Preserve existing image data
                               expressionSheet: existingChar?.expressionSheet,
                               threeViewSheet: existingChar?.threeViewSheet,
                               status: 'SUCCESS' as const,
@@ -2494,45 +2495,37 @@ export const App = () => {
                           newGeneratedChars[idx] = { ...newGeneratedChars[idx], status: 'ERROR', error: e.message };
                       }
                   } else {
-                      const context = recursiveUpstreamTexts.join('\n');
-                      const customDesc = config.method === 'AI_CUSTOM' ? config.customPrompt : undefined;
+                      // 主角：使用 GENERATE_ALL 自动完成完整流程
+                      console.log('[CHARACTER_NODE] Using GENERATE_ALL for main character:', name);
 
                       try {
-                          // PHASE 1: Generate character profile info only (no images)
-                          // Use style prompt from STYLE_PRESET or upstream context
-                          const profile = await generateCharacterProfile(
+                          // 调用 handleGenerateActionNew，它会处理完整的生成流程
+                          await handleCharacterActionNew(
+                              id,
+                              'GENERATE_ALL',
                               name,
-                              context,
-                              stylePrompt,
-                              customDesc,
-                              getUserDefaultModel('text'),  // 总是使用最新的模型配置
-                              { nodeId: id, nodeType: node.type }
+                              (nodeId: string, updates: any) => {
+                                  // 更新 generatedCharacters
+                                  const updatedNode = nodesRef.current.find(n => n.id === nodeId);
+                                  if (updatedNode?.data?.generatedCharacters) {
+                                      handleNodeUpdate(nodeId, { generatedCharacters: updatedNode.data.generatedCharacters });
+                                  }
+                              },
+                              nodesRef.current
                           );
 
+                          // 更新状态为生成完成
                           const idx = newGeneratedChars.findIndex(c => c.name === name);
-                          // ✅ Phase 1 complete - user can review info
-                          // Preserve existing images (expressionSheet, threeViewSheet)
-                          const existingChar = newGeneratedChars[idx];
-                          newGeneratedChars[idx] = {
-                              ...profile,
-                              // Preserve existing image data
-                              expressionSheet: existingChar?.expressionSheet,
-                              threeViewSheet: existingChar?.threeViewSheet,
-                              status: 'SUCCESS' as const,
-                              roleType: 'main',
-                              isGeneratingExpression: false, // Explicitly set
-                              isGeneratingThreeView: false  // Explicitly set
-                          };
-                          console.log('[CHARACTER_NODE] Profile generated successfully:', {
-                              name,
-                              status: newGeneratedChars[idx].status,
-                              hasProfile: !!newGeneratedChars[idx],
-                              profession: newGeneratedChars[idx].profession,
-                              personality: newGeneratedChars[idx].personality?.substring(0, 50)
-                          });
-                          // No expression sheet or three-view generation here
-                          // User will generate them on-demand in the detail modal
+                          if (idx >= 0) {
+                              const updatedChar = nodesRef.current.find(n => n.id === id)?.data?.generatedCharacters?.find(c => c.name === name);
+                              if (updatedChar) {
+                                  newGeneratedChars[idx] = updatedChar;
+                              }
+                          }
+
+                          console.log('[CHARACTER_NODE] GENERATE_ALL completed for:', name);
                       } catch (e: any) {
+                          console.error('[CHARACTER_NODE] GENERATE_ALL failed for:', name, e);
                           const idx = newGeneratedChars.findIndex(c => c.name === name);
                           newGeneratedChars[idx] = { ...newGeneratedChars[idx], status: 'ERROR', error: e.message };
                       }

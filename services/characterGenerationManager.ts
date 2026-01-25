@@ -598,6 +598,9 @@ class CharacterGenerationManager {
       isSaved: state.isSaved,
 
       // 生成中的状态
+      profileStatus: state.profileStatus,
+      expressionStatus: state.expressionStatus,
+      threeViewStatus: state.threeViewStatus,
       isGeneratingExpression: state.expressionStatus === 'GENERATING',
       isGeneratingThreeView: state.threeViewStatus === 'GENERATING',
       expressionError: state.expressionError,

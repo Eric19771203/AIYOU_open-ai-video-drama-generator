@@ -575,19 +575,49 @@ const NodeComponent: React.FC<NodeProps> = ({
 
   React.useEffect(() => {
       if (videoBlobUrl) { URL.revokeObjectURL(videoBlobUrl); setVideoBlobUrl(null); }
-      if ((node.type === NodeType.VIDEO_GENERATOR || node.type === NodeType.VIDEO_ANALYZER) && node.data.videoUri) {
-          if (node.data.videoUri.startsWith('data:')) { setVideoBlobUrl(node.data.videoUri); return; }
-          let isActive = true; setIsLoadingVideo(true);
-          fetch(node.data.videoUri).then(res => res.blob()).then(blob => { 
-              if (isActive) { 
+      // 支持videoUri和videoUrl两种字段名
+      const videoSource = node.data.videoUri || node.data.videoUrl;
+
+      if ((node.type === NodeType.VIDEO_GENERATOR || node.type === NodeType.VIDEO_ANALYZER || node.type === NodeType.SORA_VIDEO_CHILD) && videoSource) {
+          // 如果是base64，直接使用
+          if (videoSource.startsWith('data:')) {
+              setVideoBlobUrl(videoSource);
+              return;
+          }
+
+          // 对于 Sora 视频，直接使用 URL，不需要额外处理
+          if (node.type === NodeType.SORA_VIDEO_CHILD) {
+              setVideoBlobUrl(videoSource);
+              return;
+          }
+
+          // 其他视频类型，转换为 Blob URL
+          let isActive = true;
+          setIsLoadingVideo(true);
+
+          const loadVideo = async () => {
+            try {
+              const response = await fetch(videoSource);
+              const blob = await response.blob();
+              if (isActive) {
                   const mp4Blob = new Blob([blob], { type: 'video/mp4' });
-                  setVideoBlobUrl(URL.createObjectURL(mp4Blob)); 
-                  setIsLoadingVideo(false); 
+                  setVideoBlobUrl(URL.createObjectURL(mp4Blob));
+                  setIsLoadingVideo(false);
               }
-          }).catch(err => { if (isActive) setIsLoadingVideo(false); });
-          return () => { isActive = false; if (videoBlobUrl) URL.revokeObjectURL(videoBlobUrl); };
+            } catch (err) {
+              console.error('[Node] 视频加载失败:', err);
+              if (isActive) setIsLoadingVideo(false);
+            }
+          };
+
+          loadVideo();
+
+          return () => {
+              isActive = false;
+              if (videoBlobUrl) URL.revokeObjectURL(videoBlobUrl);
+          };
       }
-  }, [node.data.videoUri, node.type]);
+  }, [node.data.videoUri, node.data.videoUrl, node.type, node.id]);
 
   const toggleAudio = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -873,6 +903,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                               <div
                                   className="bg-[#1c1c1e] border border-white/10 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto custom-scrollbar m-4"
                                   onClick={(e) => e.stopPropagation()}
+                                  onWheel={(e) => e.stopPropagation()}
                               >
                                   <div className="flex items-center justify-between mb-4">
                                       <h3 className="text-lg font-bold text-white">编辑分镜 #{editingShot.shotNumber}</h3>
@@ -1003,6 +1034,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                               onChange={(e) => setEditingShot({ ...editingShot, visualDescription: e.target.value })}
                                               rows={4}
                                               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none custom-scrollbar"
+                                              onWheel={(e) => e.stopPropagation()}
                                           />
                                       </div>
 
@@ -1013,6 +1045,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                               onChange={(e) => setEditingShot({ ...editingShot, dialogue: e.target.value })}
                                               rows={2}
                                               className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none custom-scrollbar"
+                                              onWheel={(e) => e.stopPropagation()}
                                           />
                                       </div>
 
@@ -1336,6 +1369,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                                           className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"
                                                           rows={3}
                                                           placeholder={`输入分镜 ${startIdx + idx + 1} 的描述...`}
+                                                          onWheel={(e) => e.stopPropagation()}
                                                       />
                                                       {shot.scene && (
                                                           <div className="mt-2 text-[10px] text-slate-500">
@@ -1779,7 +1813,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                               {names.map((name, idx) => {
                                   const config = configs[name] || { method: 'AI_AUTO' };
                                   const profile = generated.find(p => p.name === name);
-                                  const isProcessing = profile?.status === 'GENERATING';
+                                  const isProcessing = profile?.status === 'GENERATING' || profile?.isGeneratingExpression || profile?.isGeneratingThreeView;
                                   const isFailed = profile?.status === 'ERROR';
                                   const isSaved = profile?.isSaved;
 
@@ -1866,6 +1900,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                                       onUpdate(node.id, { characterConfigs: newConfigs });
                                                   }}
                                                   disabled={isProcessing}
+                                                  onWheel={(e) => e.stopPropagation()}
                                               />
                                           )}
 
@@ -1922,23 +1957,54 @@ const NodeComponent: React.FC<NodeProps> = ({
                                                   {/* 根据生成状态显示不同的按钮 */}
                                                   {!profile.expressionSheet && !profile.threeViewSheet && (
                                                       <div className="flex items-center gap-2 mt-1">
+                                                          {/* 主角显示九宫格按钮，配角直接显示三视图按钮 */}
+                                                          {profile.roleType === 'supporting' ? (
+                                                              <button
+                                                                  onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'GENERATE_THREE_VIEW', name); }}
+                                                                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-all"
+                                                              >
+                                                                  <Layers size={10} /> 生成三视图
+                                                              </button>
+                                                          ) : (
+                                                              <>
+                                                                  <button
+                                                                      onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'GENERATE_EXPRESSION', name); }}
+                                                                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 transition-all"
+                                                                  >
+                                                                      <Sparkles size={10} /> 生成九宫格
+                                                                  </button>
+                                                                  <button
+                                                                      onClick={(e) => { e.stopPropagation(); alert('请先生成九宫格表情图'); }}
+                                                                      disabled
+                                                                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-white/5 text-slate-600 cursor-not-allowed"
+                                                                  >
+                                                                      <Layers size={10} /> 生成三视图
+                                                                  </button>
+                                                              </>
+                                                          )}
+                                                      </div>
+                                                  )}
+
+                                                  {/* 有九宫格但没有三视图 - 显示生成三视图按钮 */}
+                                                  {profile.expressionSheet && !profile.threeViewSheet && (
+                                                      <div className="flex items-center gap-2 mt-1">
                                                           <button
-                                                              onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'GENERATE_EXPRESSION', name); }}
-                                                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 transition-all"
-                                                          >
-                                                              <Sparkles size={10} /> 生成九宫格
-                                                          </button>
-                                                          <button
-                                                              onClick={(e) => { e.stopPropagation(); alert('请先生成九宫格表情图'); }}
-                                                              disabled
-                                                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-white/5 text-slate-600 cursor-not-allowed"
+                                                              onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'GENERATE_THREE_VIEW', name); }}
+                                                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-all"
                                                           >
                                                               <Layers size={10} /> 生成三视图
+                                                          </button>
+                                                          <button
+                                                              onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'RETRY', name); }}
+                                                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-[10px] font-bold bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+                                                          >
+                                                              <RotateCcw size={10} /> 重新生成
                                                           </button>
                                                       </div>
                                                   )}
 
-                                                  {profile.expressionSheet && !profile.threeViewSheet && (
+                                                  {/* 配角：没有九宫格但有基础信息，显示生成三视图按钮 */}
+                                                  {profile.roleType === 'supporting' && !profile.expressionSheet && profile.threeViewSheet === undefined && profile.profession && (
                                                       <div className="flex items-center gap-2 mt-1">
                                                           <button
                                                               onClick={(e) => { e.stopPropagation(); onCharacterAction?.(node.id, 'GENERATE_THREE_VIEW', name); }}
@@ -2055,6 +2121,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                       value={stylePrompt}
                                       onChange={(e) => onUpdate(node.id, { stylePrompt: e.target.value })}
                                       onMouseDown={e => e.stopPropagation()}
+                                      onWheel={(e) => e.stopPropagation()}
                                       spellCheck={false}
                                   />
                               </div>
@@ -2200,7 +2267,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                           onChange={(e) => onUpdate(node.id, { [key]: e.target.value })}
                                           placeholder={`等待${label}...`}
                                           onMouseDown={e => e.stopPropagation()}
-                                          onWheel={e => e.stopPropagation()}
+                                          onWheel={(e) => e.stopPropagation()}
                                       />
                                   </div>
                               );
@@ -2684,6 +2751,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                                               onMouseDown={(e) => e.stopPropagation()}
                                                               onTouchStart={(e) => e.stopPropagation()}
                                                               onPointerDown={(e) => e.stopPropagation()}
+                                                              onWheel={(e) => e.stopPropagation()}
                                                               placeholder="Sora 提示词..."
                                                           />
                                                       </div>
@@ -2830,6 +2898,9 @@ const NodeComponent: React.FC<NodeProps> = ({
           const [useLocalServer, setUseLocalServer] = useState(false);
           const [videoError, setVideoError] = useState<string | null>(null);
 
+          // 使用videoBlobUrl（从IndexedDB加载的）优先于原始videoUrl
+          const displayVideoUrl = videoBlobUrl || videoUrl;
+
           // 格式化时间显示
           const formatTime = (time: number) => {
               const mins = Math.floor(time / 60);
@@ -2839,16 +2910,16 @@ const NodeComponent: React.FC<NodeProps> = ({
 
           // 直接下载视频（从 URL 或浏览器缓存）
           const handleDirectDownload = async () => {
-              if (!videoUrl) {
+              if (!displayVideoUrl) {
                   alert('视频 URL 不存在');
                   return;
               }
 
               try {
-                  console.log('[直接下载] 开始下载:', videoUrl);
+                  console.log('[直接下载] 开始下载:', displayVideoUrl);
 
                   // 尝试使用 fetch 下载
-                  const response = await fetch(videoUrl);
+                  const response = await fetch(displayVideoUrl);
                   if (!response.ok) {
                       throw new Error(`HTTP ${response.status}`);
                   }
@@ -2869,7 +2940,7 @@ const NodeComponent: React.FC<NodeProps> = ({
 
                   // 如果 fetch 失败，尝试在新标签页打开
                   console.log('[直接下载] 尝试在新标签页打开');
-                  window.open(videoUrl, '_blank');
+                  window.open(displayVideoUrl, '_blank');
                   alert('已在新标签页打开视频，请在视频上右键选择"视频另存为"来下载。');
               }
 
@@ -2878,7 +2949,7 @@ const NodeComponent: React.FC<NodeProps> = ({
 
           // 下载视频 - 智能兼容方案
           const handleDownload = async () => {
-              if (!videoUrl) {
+              if (!displayVideoUrl) {
                   alert('视频 URL 不存在');
                   return;
               }
@@ -2992,7 +3063,7 @@ const NodeComponent: React.FC<NodeProps> = ({
           return (
               <div className="w-full h-full flex flex-col bg-zinc-900 overflow-hidden relative">
                   {/* Video Player */}
-                  {videoUrl ? (
+                  {displayVideoUrl ? (
                       <>
                           <video
                               ref={(el) => {
@@ -3004,12 +3075,12 @@ const NodeComponent: React.FC<NodeProps> = ({
                                           setVideoError(null);
                                       };
                                       el.onerror = () => {
-                                          console.error('[视频播放] 加载失败:', videoUrl);
+                                          console.error('[视频播放] 加载失败:', displayVideoUrl);
                                           setVideoError('视频加载失败');
                                       };
                                   }
                               }}
-                              src={useLocalServer && soraTaskId ? `http://localhost:3001/api/videos/download/${soraTaskId}` : videoUrl}
+                              src={useLocalServer && soraTaskId ? `http://localhost:3001/api/videos/download/${soraTaskId}` : displayVideoUrl}
                               className="w-full h-full object-cover bg-zinc-900"
                               loop
                               playsInline
@@ -3181,7 +3252,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                   )}
 
                   {/* Error overlay */}
-                  {node.status === NodeStatus.ERROR && !videoUrl && (
+                  {node.status === NodeStatus.ERROR && !displayVideoUrl && (
                       <div className="absolute inset-0 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
                           <AlertCircle className="text-red-500 mb-2" />
                           <span className="text-xs text-red-200">{node.data.error}</span>
@@ -3353,6 +3424,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                              value={node.data.styleUserInput || ''}
                              onChange={(e) => onUpdate(node.id, { styleUserInput: e.target.value })}
                              onMouseDown={e => e.stopPropagation()}
+                             onWheel={(e) => e.stopPropagation()}
                          />
                      </div>
 
@@ -3598,6 +3670,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                  onMouseDown={(e) => e.stopPropagation()}
                                  onTouchStart={(e) => e.stopPropagation()}
                                  onPointerDown={(e) => e.stopPropagation()}
+                                 onWheel={(e) => e.stopPropagation()}
                                  placeholder="Sora 提示词..."
                              />
                          </div>
@@ -3918,6 +3991,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                 onChange={(e) => setLocalPrompt(e.target.value)}
                                 onBlur={() => { setIsInputFocused(false); commitPrompt(); }}
                                 onFocus={() => setIsInputFocused(true)}
+                                onWheel={(e) => e.stopPropagation()}
                             />
                         </div>
 
@@ -4027,7 +4101,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                         {!node.data.scriptOutline ? (
                             <>
                                 <div className="relative group/input bg-black/20 rounded-[12px]">
-                                    <textarea className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-500/60 p-2 focus:outline-none resize-none custom-scrollbar font-medium leading-relaxed" style={{ height: '60px' }} placeholder="输入剧本核心创意..." value={localPrompt} onChange={(e) => setLocalPrompt(e.target.value)} onBlur={() => { setIsInputFocused(false); commitPrompt(); }} onFocus={() => setIsInputFocused(true)} />
+                                    <textarea className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-500/60 p-2 focus:outline-none resize-none custom-scrollbar font-medium leading-relaxed" style={{ height: '60px' }} placeholder="输入剧本核心创意..." value={localPrompt} onChange={(e) => setLocalPrompt(e.target.value)} onBlur={() => { setIsInputFocused(false); commitPrompt(); }} onFocus={() => setIsInputFocused(true)} onWheel={(e) => e.stopPropagation()} />
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <select className="bg-black/20 rounded-lg px-2 py-1.5 text-[10px] text-white border border-white/5 focus:border-orange-500/50 outline-none appearance-none hover:bg-white/5" value={node.data.scriptGenre || ''} onChange={e => onUpdate(node.id, { scriptGenre: e.target.value })}>
@@ -4156,6 +4230,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                                 value={node.data.episodeModificationSuggestion || ''}
                                 onChange={(e) => onUpdate(node.id, { episodeModificationSuggestion: e.target.value })}
                                 onMouseDown={e => e.stopPropagation()}
+                                onWheel={(e) => e.stopPropagation()}
                             />
                         </div>
 
@@ -4206,7 +4281,7 @@ const NodeComponent: React.FC<NodeProps> = ({
                     // ... (Other nodes basic UI) ...
                     <>
                     <div className="relative group/input bg-black/10 rounded-[16px]">
-                        <textarea className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-500/60 p-3 focus:outline-none resize-none custom-scrollbar font-medium leading-relaxed" style={{ height: `${Math.min(inputHeight, 200)}px` }} placeholder={node.type === NodeType.AUDIO_GENERATOR ? "描述您想生成的音乐或音效..." : "描述您的修改或生成需求..."} value={localPrompt} onChange={(e) => setLocalPrompt(e.target.value)} onBlur={() => { setIsInputFocused(false); commitPrompt(); }} onKeyDown={handleCmdEnter} onFocus={() => setIsInputFocused(true)} onMouseDown={e => e.stopPropagation()} readOnly={isWorking} />
+                        <textarea className="w-full bg-transparent text-xs text-slate-200 placeholder-slate-500/60 p-3 focus:outline-none resize-none custom-scrollbar font-medium leading-relaxed" style={{ height: `${Math.min(inputHeight, 200)}px` }} placeholder={node.type === NodeType.AUDIO_GENERATOR ? "描述您想生成的音乐或音效..." : "描述您的修改或生成需求..."} value={localPrompt} onChange={(e) => setLocalPrompt(e.target.value)} onBlur={() => { setIsInputFocused(false); commitPrompt(); }} onKeyDown={handleCmdEnter} onFocus={() => setIsInputFocused(true)} onMouseDown={e => e.stopPropagation()} onWheel={(e) => e.stopPropagation()} readOnly={isWorking} />
                         <div className="absolute bottom-0 left-0 w-full h-3 cursor-row-resize flex items-center justify-center opacity-0 group-hover/input:opacity-100 transition-opacity" onMouseDown={handleInputResizeStart}><div className="w-8 h-1 rounded-full bg-white/10 group-hover/input:bg-white/20" /></div>
                     </div>
                     {/* ... Models dropdown, Aspect ratio, etc. Same as existing ... */}
@@ -4232,6 +4307,7 @@ const NodeComponent: React.FC<NodeProps> = ({
   const isInteracting = isDragging || isResizing || isGroupDragging;
   return (
     <div
+        data-node-container="true"
         className={`absolute rounded-[24px] group ${isSelected ? 'ring-1 ring-cyan-500/50 shadow-[0_0_40px_-10px_rgba(34,211,238,0.3)] z-30' : 'ring-1 ring-white/10 hover:ring-white/20 z-10'}`}
         style={{
             left: node.x, top: node.y, width: nodeWidth, height: nodeHeight,
@@ -4245,7 +4321,6 @@ const NodeComponent: React.FC<NodeProps> = ({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onContextMenu={(e) => onNodeContextMenu(e, node.id)}
-        onWheel={(e) => e.stopPropagation()}
     >
         {renderTitleBar()}
         {renderHoverToolbar()}

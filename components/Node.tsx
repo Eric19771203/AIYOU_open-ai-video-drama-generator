@@ -3636,9 +3636,9 @@ const NodeComponent: React.FC<NodeProps> = ({
          return null;
      }
 
-     // STORYBOARD_VIDEO_GENERATOR 在 prompting 状态下始终显示底部操作栏
-     const isAlwaysOpen = node.type === NodeType.STORYBOARD_VIDEO_GENERATOR &&
-                            (node.data as any).status === 'prompting';
+     // STORYBOARD_VIDEO_GENERATOR 和 SORA_VIDEO_GENERATOR 在特定状态下始终显示底部操作栏
+     const isAlwaysOpen = (node.type === NodeType.STORYBOARD_VIDEO_GENERATOR && (node.data as any).status === 'prompting') ||
+                          (node.type === NodeType.SORA_VIDEO_GENERATOR && (node.data as any).taskGroups && (node.data as any).taskGroups.length > 0);
      const isOpen = isAlwaysOpen || (isHovered || isInputFocused);
 
      // 获取当前画布缩放比例，用于反向缩放底部操作栏以保持按钮可点击

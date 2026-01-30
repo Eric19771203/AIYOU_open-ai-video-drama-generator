@@ -35,6 +35,135 @@ const getImageDimensions = (src: string): Promise<{width: number, height: number
     });
 };
 
+// 处理分镜视频生成的函数
+const handleStoryboardVideoGeneration = async (
+    node: AppNode,
+    inputs: AppNode[],
+    handleNodeUpdate: (id: string, updates: any) => void
+) => {
+    const data = node.data as any;
+    const selectedPlatform = data.selectedPlatform || 'yunwuapi';
+    const selectedModel = data.selectedModel || 'sora';
+    const subModel = data.subModel || selectedModel;
+    const modelConfig = data.modelConfig || {
+        aspect_ratio: '16:9',
+        duration: '10',
+        quality: 'standard'
+    };
+
+    // 获取API Key（从localStorage或环境变量）
+    const apiKey = localStorage.getItem(`${selectedPlatform}_api_key`) || '';
+    if (!apiKey) {
+        throw new Error(`未配置 ${selectedPlatform} 的 API Key`);
+    }
+
+    // 更新状态为生成中
+    handleNodeUpdate(node.id, {
+        status: 'generating',
+        progress: 0,
+        isLoading: true
+    });
+
+    try {
+        // 调用后端API提交任务
+        const submitResponse = await fetch('http://localhost:3001/api/sora/generations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey
+            },
+            body: JSON.stringify({
+                prompt: data.prompt || 'Generate video',
+                aspect_ratio: modelConfig.aspect_ratio,
+                duration: modelConfig.duration,
+                hd: modelConfig.quality === 'hd'
+            })
+        });
+
+        if (!submitResponse.ok) {
+            const errorData = await submitResponse.json();
+            throw new Error(errorData.error || '提交视频生成任务失败');
+        }
+
+        const submitData = await submitResponse.json();
+        const taskId = submitData.id || submitData.task_id;
+
+        if (!taskId) {
+            throw new Error('未返回任务ID');
+        }
+
+        console.log('[分镜视频生成] 任务已提交，ID:', taskId);
+
+        // 轮询任务进度
+        const pollInterval = 3000; // 3秒轮询一次
+        const maxPolls = 120; // 最多轮询120次（6分钟）
+        let currentPoll = 0;
+
+        while (currentPoll < maxPolls) {
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+            const statusResponse = await fetch(`http://localhost:3001/api/sora/generations/${taskId}`, {
+                method: 'GET',
+                headers: {
+                    'X-API-Key': apiKey
+                }
+            });
+
+            if (!statusResponse.ok) {
+                console.error('[分镜视频生成] 查询任务状态失败');
+                continue;
+            }
+
+            const statusData = await statusResponse.json();
+            const progress = statusData.progress || statusData.progress_pct || 0;
+
+            // 更新进度
+            handleNodeUpdate(node.id, {
+                progress: Math.round(progress)
+            });
+
+            console.log('[分镜视频生成] 进度:', progress + '%');
+
+            // 检查是否完成
+            if (progress >= 100 || statusData.status === 'completed' || statusData.status === 'succeeded') {
+                // 任务完成
+                const videoUrl = statusData.video_url || statusData.output || statusData.url;
+
+                handleNodeUpdate(node.id, {
+                    status: 'completed',
+                    progress: 100,
+                    videoUrl: videoUrl,
+                    isLoading: false
+                });
+
+                console.log('[分镜视频生成] ✅ 完成!', { videoUrl });
+                return;
+            }
+
+            // 检查是否失败
+            if (statusData.status === 'failed' || statusData.status === 'error') {
+                throw new Error(statusData.error || '视频生成失败');
+            }
+
+            currentPoll++;
+        }
+
+        // 超时
+        throw new Error('视频生成超时');
+
+    } catch (error: any) {
+        console.error('[分镜视频生成] 错误:', error);
+        handleNodeUpdate(node.id, {
+            status: 'completed',
+            progress: 0,
+            error: error.message,
+            isLoading: false
+        });
+        throw error;
+    }
+};
+
+
 const ExpandedView = ({ media, onClose }: { media: any, onClose: () => void }) => {
     const [visible, setVisible] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -1293,6 +1422,27 @@ export const App = () => {
              const img = node.data.image || inputImages[0];
              const res = await editImageWithText(img, prompt, node.data.model);
              handleNodeUpdate(id, { image: res });
+          } else if (node.type === NodeType.STORYBOARD_VIDEO_GENERATOR) {
+             // 处理分镜视频生成节点
+             const action = promptOverride;
+
+             if (action === 'fetch-shots') {
+                // 获取分镜数据
+                handleNodeUpdate(id, { status: 'selecting', isLoading: true });
+                // TODO: 实现从上游节点获取分镜的逻辑
+                handleNodeUpdate(id, { status: 'prompting', isLoading: false });
+             } else if (action === 'generate-video') {
+                // 生成视频
+                await handleStoryboardVideoGeneration(node, inputs, handleNodeUpdate);
+             } else if (action === 'cancel-generate') {
+                // 取消生成
+                handleNodeUpdate(id, { status: 'completed', progress: 100 });
+             } else if (action === 'regenerate-video') {
+                // 重新生成
+                await handleStoryboardVideoGeneration(node, inputs, handleNodeUpdate);
+             } else {
+                throw new Error(`未知的操作: ${action}`);
+             }
           }
           setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.SUCCESS } : n));
       } catch (e: any) {

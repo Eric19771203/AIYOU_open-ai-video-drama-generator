@@ -96,7 +96,7 @@ export const Galaxy: React.FC<GalaxyProps> = ({
       const y = centerY + Math.sin(driftAngle) * initialRadius;
 
       const sizeRandom = Math.random();
-      const size = sizeRandom < 0.85 ? sizeRandom * 1.2 + 0.2 : sizeRandom * 2 + 1.5;
+      const size = sizeRandom < 0.85 ? sizeRandom * 2 + 0.5 : sizeRandom * 3.5 + 2.5;
 
       stars.push({
         x,
@@ -133,7 +133,7 @@ export const Galaxy: React.FC<GalaxyProps> = ({
       ctx.clearRect(0, 0, width, height);
 
       if (!disableAnimation) {
-        time += 0.004 * speed;
+        time += 0.008 * speed;
       }
 
       const stars = starsRef.current;
@@ -144,44 +144,36 @@ export const Galaxy: React.FC<GalaxyProps> = ({
         let y = centerY + Math.sin(star.driftAngle) * currentRadius;
 
         if (!disableAnimation) {
-          const driftOffset = time * star.driftSpeed * 20;
+          const driftOffset = time * star.driftSpeed * 5;
           currentRadius = star.initialRadius + driftOffset;
 
           if (currentRadius > maxDist) {
-            currentRadius = Math.random() * 20;
+            currentRadius = Math.random() * 10;
           }
 
           x = centerX + Math.cos(star.driftAngle) * currentRadius;
           y = centerY + Math.sin(star.driftAngle) * currentRadius;
         }
 
-        if (mouseInteraction && isHovered && mouseRepulsion) {
-          const dx = x - mousePos.x;
-          const dy = y - mousePos.y;
+        if (mouseInteraction && isHovered) {
+          const dx = mousePos.x - x;
+          const dy = mousePos.y - y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 200 && dist > 0) {
-            const force = Math.pow((200 - dist) / 200, 1.2) * repulsionStrength * 0.5;
-            if (autoCenterRepulsion > 0) {
-              const cdx = centerX - x;
-              const cdy = centerY - y;
-              const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
-              x += (cdx / cdist) * autoCenterRepulsion;
-              y += (cdy / cdist) * autoCenterRepulsion;
-            } else {
-              x += (dx / dist) * force * 30;
-              y += (dy / dist) * force * 30;
-            }
+          if (dist < 300 && dist > 10) {
+            const force = Math.pow((300 - dist) / 300, 1.5) * repulsionStrength * 0.8;
+            x += (dx / dist) * force * 25;
+            y += (dy / dist) * force * 25;
           }
         }
 
-        const twinkleFactor = 0.6 + Math.sin(time * 0.5 + star.twinkle) * twinkleIntensity * 0.4;
+        const twinkleFactor = 0.7 + Math.sin(time * 0.3 + star.twinkle) * twinkleIntensity * 0.3;
         const brightness = Math.min(1, star.brightness * twinkleFactor);
 
         const hue = star.hue;
         const saturationValue = saturation * 50;
 
-        const glowSize = star.size * (1.5 + glowIntensity * 3);
+        const glowSize = star.size * (2 + glowIntensity * 5);
 
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
         gradient.addColorStop(0, `hsla(${hue}, ${saturationValue}%, ${brightness * 100}%, ${brightness})`);

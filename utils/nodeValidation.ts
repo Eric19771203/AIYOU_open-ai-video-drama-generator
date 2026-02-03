@@ -359,7 +359,8 @@ export function validateConnection(
   // 2. 检查目标节点的输入数量限制
   const currentInputs = existingConnections.filter(c => c.to === toNode.id);
 
-  if (currentInputs.length >= toRules.maxInputs) {
+  // maxInputs 为 -1 表示不限制输入数量
+  if (toRules.maxInputs >= 0 && currentInputs.length >= toRules.maxInputs) {
     return {
       valid: false,
       error: `"${toNode.title}" 最多只能接收 ${toRules.maxInputs} 个输入`

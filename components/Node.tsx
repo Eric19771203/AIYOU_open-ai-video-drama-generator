@@ -5030,31 +5030,40 @@ const NodeComponent: React.FC<NodeProps> = ({
                                             duration = inputNode.data.duration || 0;
                                             break;
                                         case NodeType.SORA_VIDEO_GENERATOR:
-                                            // Get videos from task groups
-                                            const taskGroups = (inputNode.data as any).taskGroups || [];
-                                            for (const tg of taskGroups) {
-                                                if (tg.videoUrl) {
+                                            // Sora 2 节点会创建子节点（SORA_VIDEO_CHILD），视频存储在子节点中
+                                            // 通过 inputs 连接来查找子节点
+                                            const allSoraChildren = nodeQuery ? nodeQuery.getNodesByType(NodeType.SORA_VIDEO_CHILD) : [];
+                                            const connectedSoraChildren = allSoraChildren.filter(child =>
+                                                child.inputs && child.inputs.includes(inputNode.id)
+                                            );
+
+                                            for (const childNode of connectedSoraChildren) {
+                                                if (childNode.data.videoUrl) {
                                                     videos.push({
-                                                        id: `${inputNode.id}-${tg.id}`,
-                                                        url: tg.videoUrl,
+                                                        id: childNode.id,
+                                                        url: childNode.data.videoUrl,
                                                         sourceNodeId: inputNode.id,
-                                                        sourceNodeName: inputNode.title,
-                                                        duration: tg.videoMetadata?.duration || 0
+                                                        sourceNodeName: `${inputNode.title} - ${childNode.data.taskNumber || '视频'}`,
+                                                        duration: childNode.data.duration || 0
                                                     });
                                                 }
                                             }
                                             break;
                                         case NodeType.STORYBOARD_VIDEO_GENERATOR:
-                                            // Get videos from child nodes
-                                            const childNodeIds = (inputNode.data as any).childNodeIds || [];
-                                            const childNodes = nodeQuery ? nodeQuery.getNodesByIds(childNodeIds) : [];
-                                            for (const childNode of childNodes) {
-                                                if (childNode?.data.videoUrl) {
+                                            // 分镜视频生成器也会创建子节点（STORYBOARD_VIDEO_CHILD）
+                                            // 通过 inputs 连接来查找子节点
+                                            const allStoryboardChildren = nodeQuery ? nodeQuery.getNodesByType(NodeType.STORYBOARD_VIDEO_CHILD) : [];
+                                            const connectedStoryboardChildren = allStoryboardChildren.filter(child =>
+                                                child.inputs && child.inputs.includes(inputNode.id)
+                                            );
+
+                                            for (const childNode of connectedStoryboardChildren) {
+                                                if (childNode.data.videoUrl) {
                                                     videos.push({
                                                         id: childNode.id,
                                                         url: childNode.data.videoUrl,
                                                         sourceNodeId: inputNode.id,
-                                                        sourceNodeName: inputNode.title,
+                                                        sourceNodeName: `${inputNode.title} - ${childNode.data.shotIndex || '视频'}`,
                                                         duration: childNode.data.videoDuration || 0
                                                     });
                                                 }

@@ -62,6 +62,13 @@ export function createNodeQuery(nodesRef: React.MutableRefObject<AppNode[]>) {
     },
 
     /**
+     * 获取指定类型的所有节点
+     */
+    getNodesByType: (nodeType: string): AppNode[] => {
+      return nodesRef.current.filter(n => n.type === nodeType);
+    },
+
+    /**
      * 获取指定类型的上游节点
      */
     getUpstreamNodes: (nodeId: string, nodeType: string): AppNode[] => {

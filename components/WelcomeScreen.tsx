@@ -24,14 +24,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ visible }) => {
     >
       {/* 标题 */}
       <div className="flex flex-col items-center justify-center mb-10 select-none animate-in fade-in slide-in-from-bottom-8 duration-1000">
-        <div className="relative">
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-zinc-300 to-zinc-600 drop-shadow-sm px-4 pb-2">
-            {t.appName}
-          </h1>
-          <div className="absolute -inset-10 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-blue-500/20 blur-[60px] opacity-20 pointer-events-none mix-blend-screen"></div>
+        <div className="relative mb-8">
+          <img
+            src="/logo.png"
+            alt="AIYOU Logo"
+            className="h-24 md:h-32 object-contain drop-shadow-2xl"
+          />
         </div>
 
-        <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center gap-4">
           <div className="h-px w-12 bg-gradient-to-r from-transparent to-zinc-600"></div>
           <span className="text-[11px] font-bold tracking-[0.6em] text-zinc-500 uppercase">
             {t.welcome}

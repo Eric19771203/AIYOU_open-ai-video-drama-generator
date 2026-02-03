@@ -8,17 +8,12 @@
  */
 
 // ... existing imports
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useLanguage } from './src/i18n/LanguageContext';
 import { Node } from './components/Node';
 import { SidebarDock } from './components/SidebarDock';
 import { AssistantPanel } from './components/AssistantPanel';
-import { ImageCropper } from './components/ImageCropper';
-import { SketchEditor } from './components/SketchEditor'; 
 import { SmartSequenceDock } from './components/SmartSequenceDock';
-import { SonicStudio } from './components/SonicStudio'; 
-import { CharacterLibrary } from './components/CharacterLibrary';
-import { CharacterDetailModal } from './components/CharacterDetailModal';
 import { SettingsPanel } from './components/SettingsPanel';
 import { DebugPanel } from './components/DebugPanel';
 import { ModelFallbackNotification } from './components/ModelFallbackNotification';
@@ -41,12 +36,20 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { MemoizedConnectionLayer } from './components/ConnectionLayer';
 import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { ApiKeyPrompt } from './components/ApiKeyPrompt';
-import { VideoEditor, VideoSource } from './components/VideoEditor';
+import type { VideoSource } from './components/VideoEditor';
 import { getNodeIcon, getNodeNameCN, getApproxNodeHeight, getNodeBounds } from './utils/nodeHelpers';
 import { useCanvasState } from './hooks/useCanvasState';
 import { useNodeOperations } from './hooks/useNodeOperations';
 import { useHistory } from './hooks/useHistory';
 import { createNodeQuery, useThrottle } from './hooks/usePerformanceOptimization';
+
+// Lazy load large components
+const VideoEditor = lazy(() => import('./components/VideoEditor').then(m => ({ default: m.VideoEditor })));
+const ImageCropper = lazy(() => import('./components/ImageCropper').then(m => ({ default: m.ImageCropper })));
+const SketchEditor = lazy(() => import('./components/SketchEditor').then(m => ({ default: m.SketchEditor })));
+const SonicStudio = lazy(() => import('./components/SonicStudio').then(m => ({ default: m.SonicStudio })));
+const CharacterLibrary = lazy(() => import('./components/CharacterLibrary').then(m => ({ default: m.CharacterLibrary })));
+const CharacterDetailModal = lazy(() => import('./components/CharacterDetailModal').then(m => ({ default: m.CharacterDetailModal })));
 import {
     Plus, Copy, Trash2, Type, Image as ImageIcon, Video as VideoIcon,
     ScanFace, Brush, MousePointerClick, LayoutTemplate, X, Film, Link, RefreshCw, Upload,
@@ -4864,38 +4867,52 @@ COMPOSITION REQUIREMENTS:
               getNodeName={getNodeNameCN}
           />
           
-          {croppingNodeId && imageToCrop && <ImageCropper imageSrc={imageToCrop} onCancel={() => {setCroppingNodeId(null); setImageToCrop(null);}} onConfirm={(b) => {handleNodeUpdate(croppingNodeId, {croppedFrame: b}); setCroppingNodeId(null); setImageToCrop(null);}} />}
+          {croppingNodeId && imageToCrop && (
+            <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+              <ImageCropper imageSrc={imageToCrop} onCancel={() => {setCroppingNodeId(null); setImageToCrop(null);}} onConfirm={(b) => {handleNodeUpdate(croppingNodeId, {croppedFrame: b}); setCroppingNodeId(null); setImageToCrop(null);}} />
+            </Suspense>
+          )}
           <ExpandedView media={expandedMedia} onClose={() => setExpandedMedia(null)} />
-          {isSketchEditorOpen && <SketchEditor onClose={() => setIsSketchEditorOpen(false)} onGenerate={handleSketchResult} />}
+          {isSketchEditorOpen && (
+            <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+              <SketchEditor onClose={() => setIsSketchEditorOpen(false)} onGenerate={handleSketchResult} />
+            </Suspense>
+          )}
           <SmartSequenceDock 
              isOpen={isMultiFrameOpen} 
              onClose={() => setIsMultiFrameOpen(false)} 
              onGenerate={handleMultiFrameGenerate}
              onConnectStart={(e, type) => { e.preventDefault(); e.stopPropagation(); setConnectionStart({ id: 'smart-sequence-dock', x: e.clientX, y: e.clientY }); }}
           />
-          <SonicStudio 
-            isOpen={isSonicStudioOpen}
-            onClose={() => setIsSonicStudioOpen(false)}
-            history={assetHistory.filter(a => a.type === 'audio')}
-            onGenerate={(src, prompt) => handleAssetGenerated('audio', src, prompt)}
-          />
-          <CharacterLibrary 
-            isOpen={isCharacterLibraryOpen}
-            onClose={() => setIsCharacterLibraryOpen(false)}
-            characters={assetHistory.filter(a => a.type === 'character').map(a => a.data)}
-            onDelete={(id) => {
-                // Find matching asset ID (which is the char.id)
-                setAssetHistory(prev => prev.filter(a => a.id !== id));
-            }}
-          />
-          <CharacterDetailModal
-            character={viewingCharacter?.character || null}
-            nodeId={viewingCharacter?.nodeId}
+          <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+            <SonicStudio
+              isOpen={isSonicStudioOpen}
+              onClose={() => setIsSonicStudioOpen(false)}
+              history={assetHistory.filter(a => a.type === 'audio')}
+              onGenerate={(src, prompt) => handleAssetGenerated('audio', src, prompt)}
+            />
+          </Suspense>
+          <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+            <CharacterLibrary
+              isOpen={isCharacterLibraryOpen}
+              onClose={() => setIsCharacterLibraryOpen(false)}
+              characters={assetHistory.filter(a => a.type === 'character').map(a => a.data)}
+              onDelete={(id) => {
+                  // Find matching asset ID (which is the char.id)
+                  setAssetHistory(prev => prev.filter(a => a.id !== id));
+              }}
+            />
+          </Suspense>
+          <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+            <CharacterDetailModal
+              character={viewingCharacter?.character || null}
+              nodeId={viewingCharacter?.nodeId}
             allNodes={nodes}
             onClose={() => setViewingCharacter(null)}
             onGenerateExpression={(nodeId, charName) => handleCharacterAction(nodeId, 'GENERATE_EXPRESSION', charName)}
             onGenerateThreeView={(nodeId, charName) => handleCharacterAction(nodeId, 'GENERATE_THREE_VIEW', charName)}
           />
+          </Suspense>
           <SettingsPanel
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
@@ -4911,15 +4928,17 @@ COMPOSITION REQUIREMENTS:
           />
 
           {/* 视频编辑器 */}
-          <VideoEditor
-            isOpen={isVideoEditorOpen}
-            onClose={() => setIsVideoEditorOpen(false)}
-            initialVideos={videoEditorSources}
-            onExport={(outputUrl) => {
-              console.log('[VideoEditor] Export completed:', outputUrl);
-              // TODO: 将导出的视频保存到节点或下载
-            }}
-          />
+          <Suspense fallback={<div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"><Loader2 size={48} className="animate-spin text-cyan-400" /></div>}>
+            <VideoEditor
+              isOpen={isVideoEditorOpen}
+              onClose={() => setIsVideoEditorOpen(false)}
+              initialVideos={videoEditorSources}
+              onExport={(outputUrl) => {
+                console.log('[VideoEditor] Export completed:', outputUrl);
+                // TODO: 将导出的视频保存到节点或下载
+              }}
+            />
+          </Suspense>
 
           {/* 模型降级通知 */}
           <ModelFallbackNotification />

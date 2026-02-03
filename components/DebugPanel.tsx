@@ -10,7 +10,7 @@ interface DebugPanelProps {
     onClose: () => void;
 }
 
-export const DebugPanel: React.FC<DebugPanelProps> = ({ isOpen, onClose }) => {
+export const DebugPanel: React.FC<DebugPanelProps> = React.memo(({ isOpen, onClose }) => {
     const [logs, setLogs] = useState<APILogEntry[]>([]);
     const [filter, setFilter] = useState<'all' | 'success' | 'error' | 'pending'>('all');
     const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
@@ -342,4 +342,4 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ isOpen, onClose }) => {
             </div>
         </div>
     );
-};
+});

@@ -142,7 +142,7 @@ export const CharacterDetailModal: React.FC<CharacterDetailModalProps> = ({
                                 </div>
                                 <div className="aspect-square w-full bg-black rounded-xl overflow-hidden border border-white/10 shadow-lg">
                                     {latestCharacter.expressionSheet ? (
-                                        <img src={latestCharacter.expressionSheet} className="w-full h-full object-contain" />
+                                        <img src={latestCharacter.expressionSheet} loading="lazy" className="w-full h-full object-contain" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs">
                                             {isGeneratingExpression ? '生成中...' : '点击右上角按钮生成表情图'}
@@ -185,7 +185,7 @@ export const CharacterDetailModal: React.FC<CharacterDetailModalProps> = ({
                             </div>
                             <div className="aspect-[3/4] w-full bg-black rounded-xl overflow-hidden border border-white/10 shadow-lg">
                                 {latestCharacter.threeViewSheet ? (
-                                    <img src={latestCharacter.threeViewSheet} className="w-full h-full object-contain" />
+                                    <img src={latestCharacter.threeViewSheet} loading="lazy" className="w-full h-full object-contain" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-slate-600 text-xs p-10 text-center">
                                         {isGeneratingThreeView ? '生成中...' : '点击右上角按钮生成三视图'}

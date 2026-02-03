@@ -53,7 +53,7 @@ const MODEL_CATEGORIES = {
   }
 };
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = React.memo(({ isOpen, onClose }) => {
   const { t } = useLanguage();
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -1486,4 +1486,4 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ isOpen, onClose })
       )}
     </div>
   );
-};
+});

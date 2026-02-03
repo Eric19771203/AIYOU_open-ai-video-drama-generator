@@ -18,7 +18,7 @@ interface WelcomeScreenProps {
  * 欢迎屏幕组件
  * 在画布为空时显示
  */
-export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ visible }) => {
+export const WelcomeScreen: React.FC<WelcomeScreenProps> = React.memo(({ visible }) => {
   const { t } = useLanguage();
 
   if (!visible) return null;
@@ -86,4 +86,4 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ visible }) => {
       </div>
     </div>
   );
-};
+});

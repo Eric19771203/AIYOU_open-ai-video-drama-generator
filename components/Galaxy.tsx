@@ -20,7 +20,7 @@ interface GalaxyProps {
   className?: string;
 }
 
-export const Galaxy: React.FC<GalaxyProps> = ({
+export const Galaxy: React.FC<GalaxyProps> = React.memo(({
   focal = [0.5, 0.5],
   rotation = [1.0, 0.0],
   starSpeed = 0.5,
@@ -247,6 +247,6 @@ export const Galaxy: React.FC<GalaxyProps> = ({
       }}
     />
   );
-};
+});
 
 export default Galaxy;

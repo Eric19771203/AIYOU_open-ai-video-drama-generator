@@ -64,11 +64,26 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ visible }) => {
 
         <div className="flex items-center gap-4">
           <div className="h-px w-16 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
-          <span className="text-xl md:text-2xl font-bold tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 animate-pulse">
+          <span className="text-xl md:text-2xl font-bold tracking-[0.3em] text-white animate-[glow_2s_ease-in-out_infinite]">
             {t.welcome}
           </span>
           <div className="h-px w-16 bg-gradient-to-l from-transparent via-cyan-500/50 to-transparent"></div>
         </div>
+
+        <style>{`
+          @keyframes glow {
+            0%, 100% {
+              text-shadow: 0 0 20px rgba(34, 211, 238, 0.3),
+                           0 0 40px rgba(34, 211, 238, 0.2),
+                           0 0 60px rgba(34, 211, 238, 0.1);
+            }
+            50% {
+              text-shadow: 0 0 30px rgba(34, 211, 238, 0.6),
+                           0 0 60px rgba(34, 211, 238, 0.4),
+                           0 0 90px rgba(34, 211, 238, 0.2);
+            }
+          }
+        `}</style>
       </div>
 
       {/* 提示信息 */}

@@ -270,7 +270,9 @@ export const NODE_DEPENDENCY_RULES: Record<NodeType, {
     allowedInputs: [
       NodeType.SORA_VIDEO_GENERATOR
     ],
-    allowedOutputs: [],  // Terminal display node
+    allowedOutputs: [
+      NodeType.VIDEO_EDITOR  // Can output to video editor
+    ],
     minInputs: 1,
     maxInputs: 1,
     description: '显示单个 Sora 2 视频生成结果'
@@ -292,7 +294,9 @@ export const NODE_DEPENDENCY_RULES: Record<NodeType, {
     allowedInputs: [
       NodeType.STORYBOARD_VIDEO_GENERATOR
     ],
-    allowedOutputs: [],  // Terminal display node
+    allowedOutputs: [
+      NodeType.VIDEO_EDITOR  // Can output to video editor
+    ],
     minInputs: 1,
     maxInputs: 1,
     description: '显示单个分镜视频生成结果'
@@ -303,7 +307,9 @@ export const NODE_DEPENDENCY_RULES: Record<NodeType, {
     allowedInputs: [
       NodeType.VIDEO_GENERATOR,
       NodeType.SORA_VIDEO_GENERATOR,
+      NodeType.SORA_VIDEO_CHILD,  // Sora 2 视频结果
       NodeType.STORYBOARD_VIDEO_GENERATOR,
+      NodeType.STORYBOARD_VIDEO_CHILD,  // 分镜视频结果
       NodeType.VIDEO_ANALYZER,
       NodeType.VIDEO_EDITOR  // 支持链式编辑
     ],

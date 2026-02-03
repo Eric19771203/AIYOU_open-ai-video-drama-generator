@@ -475,6 +475,7 @@ const NodeComponent: React.FC<NodeProps> = ({
 
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement | HTMLAudioElement | null>(null);
   const isHoveringRef = useRef(false);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);  // 延迟关闭定时器
   const [videoBlobUrl, setVideoBlobUrl] = useState<string | null>(null);
   const [isLoadingVideo, setIsLoadingVideo] = useState(false); 
   const [showImageGrid, setShowImageGrid] = useState(false);

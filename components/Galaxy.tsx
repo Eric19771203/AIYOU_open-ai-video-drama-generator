@@ -45,16 +45,13 @@ export const Galaxy: React.FC<GalaxyProps> = ({
   const starsRef = useRef<Array<{
     x: number;
     y: number;
-    baseX: number;
-    baseY: number;
     size: number;
     hue: number;
     brightness: number;
     twinkle: number;
-    angle: number;
-    radius: number;
+    driftAngle: number;
     driftSpeed: number;
-    armOffset: number;
+    initialRadius: number;
   }>>([]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -72,57 +69,45 @@ export const Galaxy: React.FC<GalaxyProps> = ({
 
     const width = container.offsetWidth;
     const height = container.offsetHeight;
-    const starCount = Math.floor(300 * density);
+    const starCount = Math.floor(250 * density);
     const centerX = width * focal[0];
     const centerY = height * focal[1];
+    const maxDist = Math.max(width, height) * 0.7;
 
     const stars: Array<{
       x: number;
       y: number;
-      baseX: number;
-      baseY: number;
       size: number;
       hue: number;
       brightness: number;
       twinkle: number;
-      angle: number;
-      radius: number;
+      driftAngle: number;
       driftSpeed: number;
-      armOffset: number;
+      initialRadius: number;
     }> = [];
 
-    const numArms = 3;
-    const maxRadius = Math.min(width, height) * 0.55;
-
     for (let i = 0; i < starCount; i++) {
-      const arm = i % numArms;
-      const armAngle = (arm / numArms) * Math.PI * 2;
+      const driftAngle = Math.random() * Math.PI * 2;
       
-      const t = Math.pow(Math.random(), 1.5);
-      const radius = t * maxRadius;
-      const spiralOffset = radius * 0.8;
-      
-      const angle = armAngle + spiralOffset + (Math.random() - 0.5) * 0.5;
-      
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
+      const t = Math.random();
+      const initialRadius = t * maxDist;
+
+      const x = centerX + Math.cos(driftAngle) * initialRadius;
+      const y = centerY + Math.sin(driftAngle) * initialRadius;
 
       const sizeRandom = Math.random();
-      const size = sizeRandom < 0.7 ? sizeRandom * 1.5 + 0.3 : sizeRandom * 2.5 + 1.5;
+      const size = sizeRandom < 0.85 ? sizeRandom * 1.2 + 0.2 : sizeRandom * 2 + 1.5;
 
       stars.push({
         x,
         y,
-        baseX: x,
-        baseY: y,
         size,
-        hue: hueShift + Math.random() * 25 - 12,
-        brightness: Math.random() * 0.4 + 0.6,
+        hue: hueShift + Math.random() * 20 - 10,
+        brightness: Math.random() * 0.3 + 0.7,
         twinkle: Math.random() * Math.PI * 2,
-        angle,
-        radius,
-        driftSpeed: (Math.random() * 0.3 + 0.1) * starSpeed,
-        armOffset: Math.random() * 0.3 - 0.15,
+        driftAngle,
+        driftSpeed: (Math.random() * 0.2 + 0.1) * starSpeed,
+        initialRadius,
       });
     }
     starsRef.current = stars;
@@ -148,29 +133,35 @@ export const Galaxy: React.FC<GalaxyProps> = ({
       ctx.clearRect(0, 0, width, height);
 
       if (!disableAnimation) {
-        time += 0.012 * speed * 60;
+        time += 0.004 * speed;
       }
 
       const stars = starsRef.current;
 
       stars.forEach((star, index) => {
-        let currentAngle = star.angle + time * star.driftSpeed * 0.1;
-        let currentRadius = star.radius;
+        let currentRadius = star.initialRadius;
+        let x = centerX + Math.cos(star.driftAngle) * currentRadius;
+        let y = centerY + Math.sin(star.driftAngle) * currentRadius;
 
         if (!disableAnimation) {
-          currentRadius += Math.sin(time * 0.5 + index) * 2;
-        }
+          const driftOffset = time * star.driftSpeed * 20;
+          currentRadius = star.initialRadius + driftOffset;
 
-        let x = centerX + Math.cos(currentAngle) * currentRadius;
-        let y = centerY + Math.sin(currentAngle) * currentRadius;
+          if (currentRadius > maxDist) {
+            currentRadius = Math.random() * 20;
+          }
+
+          x = centerX + Math.cos(star.driftAngle) * currentRadius;
+          y = centerY + Math.sin(star.driftAngle) * currentRadius;
+        }
 
         if (mouseInteraction && isHovered && mouseRepulsion) {
           const dx = x - mousePos.x;
           const dy = y - mousePos.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 250 && dist > 0) {
-            const force = Math.pow((250 - dist) / 250, 1.5) * repulsionStrength;
+          if (dist < 200 && dist > 0) {
+            const force = Math.pow((200 - dist) / 200, 1.2) * repulsionStrength * 0.5;
             if (autoCenterRepulsion > 0) {
               const cdx = centerX - x;
               const cdy = centerY - y;
@@ -178,26 +169,24 @@ export const Galaxy: React.FC<GalaxyProps> = ({
               x += (cdx / cdist) * autoCenterRepulsion;
               y += (cdy / cdist) * autoCenterRepulsion;
             } else {
-              x += (dx / dist) * force * 40;
-              y += (dy / dist) * force * 40;
+              x += (dx / dist) * force * 30;
+              y += (dy / dist) * force * 30;
             }
           }
         }
 
-        const twinkleFactor = 0.5 + Math.sin(time * 1.5 + star.twinkle) * twinkleIntensity;
+        const twinkleFactor = 0.6 + Math.sin(time * 0.5 + star.twinkle) * twinkleIntensity * 0.4;
         const brightness = Math.min(1, star.brightness * twinkleFactor);
 
         const hue = star.hue;
-        const saturationValue = saturation * 60;
+        const saturationValue = saturation * 50;
 
-        const baseGlow = star.size * (2 + glowIntensity * 6);
-        const glowSize = baseGlow;
+        const glowSize = star.size * (1.5 + glowIntensity * 3);
 
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
-        gradient.addColorStop(0, `hsla(${hue}, ${saturationValue}%, ${brightness * 95}%, ${brightness})`);
-        gradient.addColorStop(0.3, `hsla(${hue}, ${saturationValue}%, ${brightness * 70}%, ${brightness * 0.5})`);
-        gradient.addColorStop(0.7, `hsla(${hue}, ${saturationValue}%, ${brightness * 50}%, ${brightness * 0.2})`);
-        gradient.addColorStop(1, `hsla(${hue}, ${saturationValue}%, ${brightness * 30}%, 0)`);
+        gradient.addColorStop(0, `hsla(${hue}, ${saturationValue}%, ${brightness * 100}%, ${brightness})`);
+        gradient.addColorStop(0.4, `hsla(${hue}, ${saturationValue}%, ${brightness * 70}%, ${brightness * 0.4})`);
+        gradient.addColorStop(1, `hsla(${hue}, ${saturationValue}%, ${brightness * 40}%, 0)`);
 
         ctx.beginPath();
         ctx.arc(x, y, glowSize, 0, Math.PI * 2);
@@ -206,8 +195,8 @@ export const Galaxy: React.FC<GalaxyProps> = ({
 
         if (star.size > 1.2) {
           ctx.beginPath();
-          ctx.arc(x, y, star.size * 0.4, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${hue}, ${saturationValue}%, ${Math.min(100, brightness * 100)}%, ${brightness * 0.9})`;
+          ctx.arc(x, y, star.size * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${hue}, ${saturationValue}%, ${Math.min(100, brightness * 100)}%, ${brightness * 0.8})`;
           ctx.fill();
         }
       });

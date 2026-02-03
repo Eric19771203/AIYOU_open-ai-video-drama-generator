@@ -104,6 +104,9 @@ interface NodeProps {
   onCharacterAction?: (nodeId: string, action: 'DELETE' | 'SAVE' | 'RETRY' | 'GENERATE_EXPRESSION' | 'GENERATE_THREE_VIEW', charName: string, customPrompt?: { expressionPrompt?: string; threeViewPrompt?: string }) => void | Promise<void>;
   onViewCharacter?: (character: CharacterProfile) => void;
 
+  // Video Editor Action
+  onOpenVideoEditor?: (nodeId: string) => void;
+
   isDragging?: boolean;
   isGroupDragging?: boolean;
   isSelected?: boolean;
@@ -5222,8 +5225,9 @@ const NodeComponent: React.FC<NodeProps> = ({
                             {/* Edit Video Button */}
                             <button
                                 onClick={() => {
-                                    // TODO: Open video editor page
-                                    console.log('[VIDEO_EDITOR] Opening editor page...');
+                                    if (onOpenVideoEditor) {
+                                        onOpenVideoEditor(node.id);
+                                    }
                                 }}
                                 disabled={node.inputs.length === 0}
                                 className={`

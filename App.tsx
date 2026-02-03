@@ -41,6 +41,7 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { MemoizedConnectionLayer } from './components/ConnectionLayer';
 import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { ApiKeyPrompt } from './components/ApiKeyPrompt';
+import { VideoEditor, VideoSource } from './components/VideoEditor';
 import { getNodeIcon, getNodeNameCN, getApproxNodeHeight, getNodeBounds } from './utils/nodeHelpers';
 import { useCanvasState } from './hooks/useCanvasState';
 import { useNodeOperations } from './hooks/useNodeOperations';
@@ -269,6 +270,10 @@ export const App = () => {
   const [isApiKeyPromptOpen, setIsApiKeyPromptOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [viewingCharacter, setViewingCharacter] = useState<{ character: CharacterProfile, nodeId: string } | null>(null);
+
+  // Video Editor States
+  const [isVideoEditorOpen, setIsVideoEditorOpen] = useState(false);
+  const [videoEditorSources, setVideoEditorSources] = useState<VideoSource[]>([]);
 
   // --- Canvas State (TODO: migrate to useNodeOperations) ---
   const [nodes, setNodes] = useState<AppNode[]>([]);
@@ -1551,6 +1556,97 @@ export const App = () => {
               type: (n!.data.croppedFrame || n!.data.image) ? 'image' : 'video',
               src: n!.data.croppedFrame || n!.data.image || n!.data.videoUri!
           }));
+  }, []);
+
+  // --- Video Editor Handler ---
+  const handleOpenVideoEditor = useCallback((nodeId: string) => {
+    const node = nodesRef.current.find(n => n.id === nodeId);
+    if (!node || node.type !== NodeType.VIDEO_EDITOR) {
+      console.error('[handleOpenVideoEditor] Invalid node:', node?.type);
+      return;
+    }
+
+    // 获取连接的视频
+    const sources: VideoSource[] = [];
+    const connectedNodes = nodeQuery.current.getNodesByIds(node.inputs);
+
+    for (const inputNode of connectedNodes) {
+      let videoUrl = '';
+      let duration = 0;
+
+      switch (inputNode.type) {
+        case NodeType.VIDEO_GENERATOR:
+          videoUrl = inputNode.data.videoUri || inputNode.data.videoUris?.[0] || '';
+          duration = inputNode.data.duration || 0;
+          break;
+
+        case NodeType.SORA_VIDEO_GENERATOR: {
+          // Sora 2: 从子节点获取视频
+          const allSoraChildren = nodeQuery.current.getNodesByType(NodeType.SORA_VIDEO_CHILD);
+          const connectedSoraChildren = allSoraChildren.filter(child =>
+            child.inputs && child.inputs.includes(inputNode.id)
+          );
+
+          for (const childNode of connectedSoraChildren) {
+            if (childNode.data.videoUrl) {
+              sources.push({
+                id: childNode.id,
+                url: childNode.data.videoUrl,
+                name: `${inputNode.title} - ${childNode.data.taskNumber || '视频'}`,
+                duration: childNode.data.duration || 0,
+                sourceNodeId: inputNode.id
+              });
+            }
+          }
+          continue; // Sora 2 已处理，跳过后续
+        }
+
+        case NodeType.STORYBOARD_VIDEO_GENERATOR: {
+          // 分镜视频：从子节点获取视频
+          const allStoryboardChildren = nodeQuery.current.getNodesByType(NodeType.STORYBOARD_VIDEO_CHILD);
+          const connectedStoryboardChildren = allStoryboardChildren.filter(child =>
+            child.inputs && child.inputs.includes(inputNode.id)
+          );
+
+          for (const childNode of connectedStoryboardChildren) {
+            if (childNode.data.videoUrl) {
+              sources.push({
+                id: childNode.id,
+                url: childNode.data.videoUrl,
+                name: `${inputNode.title} - ${childNode.data.selectedShotIndex !== undefined ? `镜头${childNode.data.selectedShotIndex + 1}` : '视频'}`,
+                duration: childNode.data.duration || 0,
+                sourceNodeId: inputNode.id
+              });
+            }
+          }
+          continue; // 分镜视频已处理，跳过后续
+        }
+
+        case NodeType.SORA_VIDEO_CHILD:
+          videoUrl = inputNode.data.videoUrl || '';
+          duration = inputNode.data.duration || 0;
+          break;
+
+        case NodeType.STORYBOARD_VIDEO_CHILD:
+          videoUrl = inputNode.data.videoUrl || '';
+          duration = inputNode.data.duration || 0;
+          break;
+      }
+
+      if (videoUrl) {
+        sources.push({
+          id: inputNode.id,
+          url: videoUrl,
+          name: inputNode.title,
+          duration,
+          sourceNodeId: inputNode.id
+        });
+      }
+    }
+
+    console.log('[handleOpenVideoEditor] Found video sources:', sources.length);
+    setVideoEditorSources(sources);
+    setIsVideoEditorOpen(true);
   }, []);
 
   // --- Main Action Handler ---
@@ -4584,6 +4680,7 @@ COMPOSITION REQUIREMENTS:
                       onResizeMouseDown={handleResizeMouseDown}
                       onCharacterAction={handleCharacterAction}
                       onViewCharacter={(char) => setViewingCharacter({ character: char, nodeId: node.id })}
+                      onOpenVideoEditor={handleOpenVideoEditor}
                       isSelected={selectedNodeIds.includes(node.id)}
                       inputAssets={inputAssets}
                       onInputReorder={handleInputReorder}
@@ -4793,6 +4890,17 @@ COMPOSITION REQUIREMENTS:
           <DebugPanel
             isOpen={isDebugOpen}
             onClose={() => setIsDebugOpen(false)}
+          />
+
+          {/* 视频编辑器 */}
+          <VideoEditor
+            isOpen={isVideoEditorOpen}
+            onClose={() => setIsVideoEditorOpen(false)}
+            initialVideos={videoEditorSources}
+            onExport={(outputUrl) => {
+              console.log('[VideoEditor] Export completed:', outputUrl);
+              // TODO: 将导出的视频保存到节点或下载
+            }}
           />
 
           {/* 模型降级通知 */}

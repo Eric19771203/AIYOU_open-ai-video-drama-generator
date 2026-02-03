@@ -9,7 +9,7 @@
 import React from 'react';
 import { MousePointerClick } from 'lucide-react';
 import { useLanguage } from '../src/i18n/LanguageContext';
-import { LightRays } from './LightRays';
+import { Galaxy } from './Galaxy';
 
 interface WelcomeScreenProps {
   visible: boolean;
@@ -30,18 +30,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ visible }) => {
         visible ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
       }`}
     >
-      {/* 背景光效 */}
+      {/* 背景星空 */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <LightRays
-          raysOrigin="top-center"
-          raysColor="#ffffff"
-          raysSpeed={1}
-          lightSpread={0.5}
-          rayLength={3}
-          pulsating={false}
-          fadeDistance={1}
-          saturation={1}
-          mouseInfluence={0.1}
+        <Galaxy
+          focal={[0.5, 0.5]}
+          rotation={[1.0, 0.0]}
+          starSpeed={0.5}
+          density={1}
+          hueShift={220}
+          speed={1.0}
+          mouseInteraction={true}
+          glowIntensity={0.3}
+          saturation={0.6}
+          mouseRepulsion={true}
+          twinkleIntensity={0.3}
+          rotationSpeed={0.1}
+          repulsionStrength={2}
         />
       </div>
 

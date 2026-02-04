@@ -130,13 +130,28 @@ export class StoryboardVideoGeneratorNodeService extends BaseNodeService {
 
     console.log(`[StoryboardVideoGenerator] 已选择 ${selectedShots.length} 个分镜`);
 
-    // 2. 调用 AI 生成提示词（使用 GenericBuilder，不含黑色空镜）
+    // 2. 获取上游风格信息
+    const { style: styleType, genre, setting } = this.getUpstreamStyleContext(node, context);
+    const stylePrompt = this.getVisualStylePrompt(styleType);
+
+    console.log('[StoryboardVideoGenerator] 使用风格:', {
+      style: styleType,
+      genre,
+      setting,
+      stylePrompt: stylePrompt.substring(0, 50) + '...'
+    });
+
+    // 3. 调用 AI 生成提示词（使用 GenericBuilder，传递风格和对白保留选项）
     const builder = promptBuilderFactory.getByNodeType('STORYBOARD_VIDEO_GENERATOR');
-    const prompt = await builder.build(selectedShots);
+    const prompt = await builder.build(selectedShots, {
+      visualStyle: stylePrompt,
+      context: `类型：${genre}，背景：${setting}`,
+      preserveDialogue: true  // 保留对白，不翻译
+    });
 
     console.log('[StoryboardVideoGenerator] 提示词生成完成:', prompt.substring(0, 100) + '...');
 
-    // 3. 初始化默认配置
+    // 4. 初始化默认配置
     const defaultConfig = {
       selectedPlatform: 'yunwuapi' as const,
       selectedModel: 'luma' as const,
@@ -151,7 +166,7 @@ export class StoryboardVideoGeneratorNodeService extends BaseNodeService {
       includeCharacterViews: false,
     };
 
-    // 4. 更新节点数据
+    // 5. 更新节点数据
     this.updateNodeData(node.id, {
       ...data,
       ...defaultConfig,
@@ -386,5 +401,87 @@ export class StoryboardVideoGeneratorNodeService extends BaseNodeService {
     if (!upstream) return undefined;
 
     return this.findUpstreamNode(context, upstream.id, nodeType);
+  }
+
+  /**
+   * 获取上游风格上下文（递归查找 SCRIPT_PLANNER 或 SCRIPT_EPISODE）
+   */
+  private getUpstreamStyleContext(
+    node: AppNode,
+    context: NodeExecutionContext
+  ): { style: '3D' | 'REAL' | 'ANIME'; genre: string; setting: string } {
+    // 默认值
+    let style: '3D' | 'REAL' | 'ANIME' = '3D';
+    let genre = '';
+    let setting = '';
+
+    // 辅助函数：递归查找规划节点
+    const findPlannerRecursive = (currentNode: AppNode, visited = new Set<string>()): AppNode | undefined => {
+      if (visited.has(currentNode.id)) return undefined;
+      visited.add(currentNode.id);
+
+      // 检查当前节点是否是目标节点
+      if (currentNode.type === NodeType.SCRIPT_PLANNER || currentNode.type === NodeType.SCRIPT_EPISODE) {
+        return currentNode;
+      }
+
+      // 递归搜索上游
+      const connections = context.connections.filter(c => c.to === currentNode.id);
+      for (const conn of connections) {
+        const upstream = context.nodes.find(n => n.id === conn.from);
+        if (upstream) {
+          const found = findPlannerRecursive(upstream, visited);
+          if (found) return found;
+        }
+      }
+
+      return undefined;
+    };
+
+    // 查找上游规划节点
+    const plannerNode = findPlannerRecursive(node);
+
+    if (plannerNode) {
+      // 提取风格信息
+      if (plannerNode.data.scriptVisualStyle) {
+        style = plannerNode.data.scriptVisualStyle;
+      }
+      if (plannerNode.data.scriptGenre) {
+        genre = plannerNode.data.scriptGenre;
+      }
+      if (plannerNode.data.scriptSetting) {
+        setting = plannerNode.data.scriptSetting;
+      }
+
+      console.log('[StoryboardVideoGenerator] 找到上游风格节点:', {
+        nodeId: plannerNode.id,
+        style,
+        genre,
+        setting
+      });
+    } else {
+      console.log('[StoryboardVideoGenerator] 未找到上游风格节点，使用默认风格');
+    }
+
+    return { style, genre, setting };
+  }
+
+  /**
+   * 根据风格类型生成视觉前缀
+   */
+  private getVisualStylePrompt(style: '3D' | 'REAL' | 'ANIME'): string {
+    switch (style) {
+      case '3D':
+        return `Xianxia 3D animation character, semi-realistic style, Xianxia animation aesthetics, high precision 3D modeling, PBR shading with soft translucency, subsurface scattering, ambient occlusion, delicate and smooth skin texture (not overly realistic), flowing fabric clothing, individual hair strands, neutral studio lighting, clear focused gaze, natural demeanor`;
+
+      case 'REAL':
+        return `Professional portrait photography, photorealistic human, cinematic photography, professional headshot, DSLR quality, 85mm lens, sharp focus, realistic skin texture, visible pores, natural skin imperfections, subsurface scattering, natural lighting, studio portrait lighting, softbox lighting, rim light, golden hour`;
+
+      case 'ANIME':
+        return `Anime character, anime style, 2D anime art, manga illustration style, clean linework, crisp outlines, manga art style, detailed illustration, soft lighting, rim light, vibrant colors, cel shading lighting, flat shading`;
+
+      default:
+        return `3D动漫风格`;
+    }
   }
 }

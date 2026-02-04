@@ -28,7 +28,11 @@ export class GenericPromptBuilder implements PromptBuilder {
       throw new Error('至少需要一个分镜');
     }
 
-    // 构建完整的分镜信息
+    // ✅ 提取风格和对白保留标记
+    const visualStyle = options?.visualStyle || '3D动漫风格';
+    const preserveDialogue = options?.preserveDialogue !== false;  // 默认保留
+
+    // 构建完整的分镜信息（不包含对白，避免AI翻译）
     const shotsInfo = shots.map((shot, index) => {
       return `
 镜头 ${shot.shotNumber} (${shot.duration}秒)
@@ -37,15 +41,16 @@ export class GenericPromptBuilder implements PromptBuilder {
 - 运镜方式: ${shot.cameraMovement}
 - 场景: ${shot.scene || '未指定'}
 - 视觉描述: ${shot.visualDescription}
-- 对话: ${shot.dialogue || '无'}
 - 视觉特效: ${shot.visualEffects || '无'}
 - 音效: ${shot.audioEffects || '无'}`;
     }).join('\n');
 
     const totalDuration = shots.reduce((sum, s) => sum + s.duration, 0);
 
-    // 构建 AI 提示词
+    // ✅ 修改 AI 提示词，添加风格要求和对白保留说明
     const userPrompt = `你是一位专业的视频提示词生成器。你的任务是将分镜信息转换为多镜头视频提示词格式。
+
+**风格要求**：${visualStyle}
 
 分镜信息：
 ${shotsInfo}
@@ -53,21 +58,22 @@ ${shotsInfo}
 总时长：约 ${totalDuration.toFixed(1)} 秒
 
 输出要求：
-1. 只输出多镜头格式（Shot 1, Shot 2, ...）
-2. 必须以 Shot 1 开始（第一个实际分镜）
-3. 不要添加任何前缀、后缀、说明、建议或解释
-4. 不要使用 "---" 分隔线
-5. 不要添加"导演建议"、"色彩控制"等额外内容
-6. 直接开始输出 Shot 1
+1. 每个镜头的 Scene 必须以 "${visualStyle}" 开头
+2. Scene 格式：[风格描述]，[场景描述]，[动作描述]，${preserveDialogue ? '如有对白则用引号包裹原样输出' : '忽略对白'}
+3. 只输出多镜头格式（Shot 1, Shot 2, ...）
+4. 不要添加任何前缀、后缀、说明、建议或解释
+5. 不要使用 "---" 分隔线
+6. 不要添加"导演建议"、"色彩控制"等额外内容
+7. 直接开始输出 Shot 1
 
-输出格式：
+输出格式示例：
 Shot 1:
 duration: X.Xs
-Scene: [第一个镜头的场景描述]
+Scene: ${visualStyle}，[场景描述]，[动作描述]${preserveDialogue ? '，"对白内容"（如果有）' : ''}
 
 Shot 2:
 duration: X.Xs
-Scene: [第二个镜头的场景描述]`;
+Scene: ${visualStyle}，[场景描述]，[动作描述]`;
 
     const systemPrompt = `你是一个视频提示词格式化工具。只负责将分镜信息转换为指定格式，不添加任何额外内容。`;
 
@@ -86,7 +92,7 @@ Scene: [第二个镜头的场景描述]`;
             }
           );
 
-          if (!text) return this.buildBasicPrompt(shots);
+          if (!text) return this.buildBasicPrompt(shots, options);
 
           // 清理多余内容
           return this.cleanPrompt(text);
@@ -103,7 +109,7 @@ Scene: [第二个镜头的场景描述]`;
       );
     } catch (error: any) {
       console.error('[GenericPromptBuilder] AI enhancement failed, using basic prompt:', error);
-      return this.buildBasicPrompt(shots);
+      return this.buildBasicPrompt(shots, options);
     }
   }
 
@@ -164,14 +170,28 @@ Scene: [第二个镜头的场景描述]`;
   /**
    * 构建基础提示词（回退方案）
    */
-  private buildBasicPrompt(shots: SplitStoryboardShot[]): string {
+  private buildBasicPrompt(
+    shots: SplitStoryboardShot[],
+    options?: PromptBuilderOptions
+  ): string {
+    // ✅ 提取风格和对白保留标记
+    const visualStyle = options?.visualStyle || '3D动漫风格';
+    const preserveDialogue = options?.preserveDialogue !== false;  // 默认保留
+
     const actualShots = shots.map((shot, index) => {
       const duration = shot.duration || 5;
       const scene = shot.visualDescription || '';
+      const dialogue = shot.dialogue;
+
+      // ✅ 构建Scene，包含风格+场景+对白
+      let sceneText = `${visualStyle}，${scene}`;
+      if (preserveDialogue && dialogue && dialogue !== '无') {
+        sceneText += `，"${dialogue}"`;  // ✅ 添加对白（保持原样）
+      }
 
       return `Shot ${index + 1}:
 duration: ${duration.toFixed(1)}s
-Scene: ${scene}`;
+Scene: ${sceneText}`;
     }).join('\n\n');
 
     return actualShots;

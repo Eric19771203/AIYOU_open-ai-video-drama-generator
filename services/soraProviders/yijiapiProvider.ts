@@ -30,7 +30,7 @@ export class YijiapiProvider implements SoraProvider {
 
   // API 端点
   private readonly GENERATE_API = 'https://ai.yijiarj.cn/v1/videos';
-  private readonly QUERY_API = 'http://apius.yijiarj.cn/v1/videos';
+  private readonly QUERY_API = 'https://ai.yijiarj.cn/v1/videos';
 
   /**
    * 配置转换：Sora2UserConfig → yijiAPI 格式
@@ -72,14 +72,16 @@ export class YijiapiProvider implements SoraProvider {
     const config = this.transformConfig(params.config);
 
     // 构建请求体
-    const requestBody = {
+    const requestBody: any = {
       prompt: params.prompt,
       model: config.model,
       size: config.size,
     };
 
-    // 如果有参考图片，添加到 prompt 中
-    // yijiAPI 可能不支持图片参数，需要在 prompt 中描述
+    // 添加图片URL（图生视频）
+    if (params.referenceImageUrl) {
+      requestBody.input_reference = params.referenceImageUrl;
+    }
 
     console.log(`[${this.displayName}] 提交任务参数:`, {
       model: requestBody.model,
@@ -203,6 +205,11 @@ export class YijiapiProvider implements SoraProvider {
           'processing': 'processing',
           'completed': 'completed',
           'failed': 'error',
+          'fail': 'error',
+          'failure': 'error',
+          'cancelled': 'error',
+          'cancel': 'error',
+          'canceled': 'error',
         };
 
         const apiStatus = data.status || 'queued';
@@ -233,7 +240,44 @@ export class YijiapiProvider implements SoraProvider {
         }
 
         // 提取视频 URL
-        const videoUrl = data.url || data.size; // size 字段可能包含备用 URL
+        // 注意：size 字段是视频分辨率（如 "720x720"），不是视频URL
+        let videoUrl = data.url;
+
+        // 验证 videoUrl 是否为有效 URL
+        const isValidUrl = (url: string | undefined): boolean => {
+          if (!url || typeof url !== 'string') return false;
+          try {
+            const parsed = new URL(url);
+            return (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+                   (url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') || url.includes('.avi'));
+          } catch {
+            return false;
+          }
+        };
+
+        // 只有状态为 completed 且有有效 videoUrl 时才算完成
+        if (status === 'completed' && !isValidUrl(videoUrl)) {
+          console.warn(`[${this.displayName}] 任务已完成但无有效视频URL，API原始数据:`, {
+            taskId,
+            url: data.url,
+            size: data.size,  // 这是分辨率，不是URL
+            status: data.status,
+            progress: data.progress,
+          });
+
+          return {
+            taskId,
+            status: 'error',
+            progress: data.progress || 0,
+            videoUrl: undefined,
+            videoUrlWatermarked: undefined,
+            duration: undefined,
+            quality: 'unknown',
+            isCompliant: false,
+            violationReason: data.error || data.message || '任务已完成但未生成有效视频URL',
+            _rawData: data,
+          };
+        }
 
         console.log(`[${this.displayName}] 最终返回:`, {
           taskId,

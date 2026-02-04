@@ -19,6 +19,7 @@ export interface PromptBuilderOptions {
   context?: string;
   maxShots?: number;
   targetDuration?: number;
+  preserveDialogue?: boolean;  // 是否保留对白（默认 true）
 }
 
 /**

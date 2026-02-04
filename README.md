@@ -1,14 +1,16 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 
-# 🎬 AIYOU - AI驱动的一站式漫剧创作平台
+# 🎬 AIYOU - AI-Powered Short Drama Production Platform
 
-**一个人就是一个团队 | 从创意到成片的全流程AI解决方案**
+**One Person, One Team | Complete AI Solution from Idea to Final Video**
 
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?logo=vite)](https://vite.dev)
+[![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Vite-6.2-646CFF?logo=vite)](https://vite.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js)](https://nodejs.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+[English](#english) | 简体中文
 
 </div>
 
@@ -81,70 +83,110 @@
 
 ---
 
-## 🚀 快速开始
+## 🏗️ Architecture
 
-### 环境要求
+```
+aiyou/
+├── frontend/          # React + TypeScript + Vite (Port 4000)
+├── server/            # Express + Tencent COS (Port 3001)
+└── docs/              # Documentation
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
 
 - Node.js 18+
-- npm 或 yarn 或 pnpm
+- npm or yarn or pnpm
 
-### 安装步骤
+### Installation
 
-1. **克隆项目**
+1. **Clone the repository**
 ```bash
-git clone https://github.com/yubowen123/AI-YOU.git
-cd AI-YOU
+git clone https://github.com/yubowen123/AIYOU_open-ai-video-drama-generator.git
+cd AIYOU_open-ai-video-drama-generator
 ```
 
-2. **安装依赖**
+2. **Install dependencies**
 ```bash
+# Frontend
 npm install
+
+# Backend
+cd server
+npm install
+cd ..
 ```
 
-3. **配置API密钥**
+3. **Configure environment variables**
 
-创建 `.env.local` 文件，设置你的 Gemini API Key：
-
+Create `.env.local` in root directory:
 ```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
-> 💡 获取 API Key：[Google AI Studio](https://ai.google.dev/)
+Create `server/.env`:
+```env
+OSS_BUCKET=your_bucket_name
+OSS_REGION=ap-guangzhou
+OSS_SECRET_ID=your_secret_id
+OSS_SECRET_KEY=your_secret_key
+PORT=3001
+```
 
-4. **启动开发服务器**
+> 💡 Get API keys: [Google AI Studio](https://ai.google.dev/) | [Tencent Cloud COS](https://console.cloud.tencent.com/cos)
+
+4. **Start the development servers**
+
+Terminal 1 (Backend):
+```bash
+cd server
+npm start
+```
+
+Terminal 2 (Frontend):
 ```bash
 npm run dev
 ```
 
-5. **访问应用**
+5. **Open your browser**
 
-打开浏览器访问 [http://localhost:4000](http://localhost:4000)
+Visit [http://localhost:4000](http://localhost:4000)
 
 ---
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-### 前端框架
-- **React 18.3** - 用户界面构建
-- **TypeScript 5.7** - 类型安全
-- **Vite 6.0** - 构建工具
+### Frontend
+- **React 19.2** - UI Framework
+- **TypeScript 5.8** - Type Safety
+- **Vite 6.2** - Build Tool
+- **Zustand** - State Management
+- **React Flow** - Node-based Editor
+- **Tailwind CSS** - Styling
 
-### 核心库
-- **React Flow** - 节点式画布交互
-- **Tailwind CSS** - 样式系统
-- **Zustand** - 状态管理
-- **Lucide React** - 图标库
+### Backend
+- **Node.js 18+** - Runtime
+- **Express** - Web Framework
+- **Tencent COS SDK** - File Storage
+- **Multer** - File Upload
 
-### AI集成
-- **Google Gemini API** - 图像生成、视频生成、剧本创作
-- **DeepSeek** - 备用AI模型
-- **自动降级机制** - 多模型智能切换，确保稳定性
+### AI Integration
+- **Google Gemini API** - Image/Video/Script Generation
+- **DeepSeek** - Backup AI Model
+- **Multi-model Support** - Sora, Runway, Veo, Luma, MiniMax
+- **Auto Fallback** - Automatic model switching
 
-### 特色功能
-- **多模型自动降级** - API失败时自动切换备用模型
-- **智能配额管理** - 避免超限，合理分配API调用
-- **角色一致性保持** - 支持参考图，确保角色形象统一
-- **高清输出** - 支持1K/2K/4K多种分辨率
+---
+
+## 📖 Documentation
+
+- [Backend Architecture](docs/BACKEND_ARCHITECTURE.md)
+- [Code Splitting Guide](docs/CODE_SPLITTING_GUIDE.md)
+- [Error Boundaries](docs/ERROR_BOUNDARIES.md)
+- [Contributing Guide](CONTRIBUTING.md)
 
 ---
 
@@ -189,22 +231,60 @@ npm run dev
 
 ---
 
-## 📝 许可证
+## 📝 License
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
 
----
-
-## 🤝 贡献
-
-欢迎提交 Issue 和 Pull Request！
+**Important**: Commercial resale requires explicit written permission from the original author.
 
 ---
 
-## 📧 联系方式
+## 🤝 Contributing
 
-- GitHub Issues: [提交问题](https://github.com/yubowen123/AI-YOU/issues)
-- 项目链接: [https://github.com/yubowen123/AI-YOU](https://github.com/yubowen123/AI-YOU)
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+---
+
+## 📧 Contact
+
+- GitHub Issues: [Submit Issues](https://github.com/yubowen123/AIYOU_open-ai-video-drama-generator/issues)
+- Email: a@ggbo.com
+
+---
+
+<div align="center">
+
+**If this project helps you, please give us a ⭐️!**
+
+Made with ❤️ by [光波](https://github.com/yubowen123)
+
+</div>
+
+---
+
+## English
+
+### Features
+
+- 🎬 **12 Intelligent Nodes**: Cover scriptwriting, character design, storyboard, video generation
+- 🚀 **Extreme Efficiency**: Complete in 2 hours what traditionally takes a week
+- 🎨 **Professional Quality**: 2K HD output, comparable to professional production
+- 🔗 **Node-based Workflow**: Drag-and-drop interface, connect nodes to automate
+- 💰 **Ultra-Low Cost**: No outsourcing needed, one person can do it all
+- 🔒 **Data Security**: Local deployment, full privacy control
+
+### AI Models Supported
+
+- **Video Generation**: Sora, Runway Gen-3, Veo, Luma Dream Machine
+- **Image Generation**: Gemini, Midjourney, Flux, DALL-E
+- **Script & Story**: Gemini 2.5 Pro, DeepSeek V3
+- **Audio Generation**: Suno V4
+
+### Typical Workflow
+
+```
+Idea Description → Script Outline → Character Design → Storyboard → Video Generation → Music
+```
 
 ---
 
@@ -212,6 +292,6 @@ npm run dev
 
 **如果这个项目对你有帮助，请给个 ⭐️ 支持一下！**
 
-Made with ❤️ by AIYOU Team
+Made with ❤️ by [光波](https://github.com/yubowen123)
 
 </div>

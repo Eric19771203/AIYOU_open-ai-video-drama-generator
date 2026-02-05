@@ -60,7 +60,6 @@ export class GeminiProvider implements LLMProvider {
     options?: GenerateContentOptions
   ): Promise<string> {
     const client = this.getClient();
-    const modelInstance = client.getGenerativeModel({ model });
 
     const config: any = {};
     if (options?.responseMimeType) {
@@ -70,7 +69,8 @@ export class GeminiProvider implements LLMProvider {
       config.systemInstruction = options.systemInstruction;
     }
 
-    const response = await modelInstance.generateContent({
+    const response = await client.models.generateContent({
+      model,
       contents: { parts: [{ text: prompt }] },
       config: Object.keys(config).length > 0 ? config : undefined
     });
@@ -88,7 +88,6 @@ export class GeminiProvider implements LLMProvider {
     options?: GenerateImageOptions
   ): Promise<string[]> {
     const client = this.getClient();
-    const modelInstance = client.getGenerativeModel({ model });
 
     // 构建请求内容
     const parts: any[] = [{ text: prompt }];
@@ -130,16 +129,17 @@ export class GeminiProvider implements LLMProvider {
     return logAPICall(
       'geminiGenerateImages',
       async () => {
-        const result = await modelInstance.generateContent({
+        const result = await client.models.generateContent({
+          model,
           contents: [{ role: 'user', parts }],
-          generationConfig
+          config: generationConfig
         });
 
         // 提取图片数据（支持多张图片）
         const images: string[] = [];
-        if (result.response.candidates && result.response.candidates[0]) {
-          const parts = result.response.candidates[0].content?.parts || [];
-          for (const part of parts) {
+        if (result.candidates && result.candidates[0]) {
+          const candidateParts = result.candidates[0].content?.parts || [];
+          for (const part of candidateParts) {
             if (part.inlineData && part.inlineData.data) {
               const mimeType = part.inlineData.mimeType || 'image/png';
               images.push(`data:${mimeType};base64,${part.inlineData.data}`);

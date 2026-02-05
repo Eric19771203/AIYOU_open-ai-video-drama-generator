@@ -1750,6 +1750,61 @@ export const App = () => {
               return;
           }
 
+          // Handle PROMPT_INPUT image generation
+          if (node.type === NodeType.PROMPT_INPUT && promptOverride === 'generate-image') {
+              console.log('[handleNodeAction] PROMPT_INPUT: Generating image from text');
+
+              const prompt = node.data.prompt || '';
+              if (!prompt || prompt.trim().length < 10) {
+                  throw new Error('请先输入至少10个字符的描述文字');
+              }
+
+              // 获取用户选择的分辨率和宽高比
+              const resolution = node.data.resolution || '512x512';
+              const aspectRatio = node.data.aspectRatio || '1:1';
+
+              console.log('[PROMPT_INPUT] Image generation config:', {
+                  promptLength: prompt.length,
+                  resolution,
+                  aspectRatio
+              });
+
+              // 调用生图API
+              const { generateImageFromText } = await import('./services/geminiService');
+              const inputImages: string[] = []; // PROMPT_INPUT 暂不支持参考图
+
+              const images = await generateImageFromText(
+                  prompt,
+                  getUserDefaultModel('image'),
+                  inputImages,
+                  {
+                      aspectRatio,
+                      resolution,
+                      count: 1  // 只生成一张图片
+                  },
+                  { nodeId: id, nodeType: node.type }
+              );
+
+              if (images && images.length > 0) {
+                  // 更新节点数据
+                  handleNodeUpdate(id, {
+                      image: images[0],
+                      images: images,
+                      status: NodeStatus.SUCCESS
+                  });
+
+                  // 保存到本地存储
+                  await saveImageNodeOutput(id, images, 'PROMPT_INPUT');
+
+                  console.log('[PROMPT_INPUT] ✓ Image generated successfully');
+              } else {
+                  throw new Error('图片生成失败：未返回图片');
+              }
+
+              setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.SUCCESS } : n));
+              return;
+          }
+
           // Handle DRAMA_ANALYZER extract action
           if (node.type === NodeType.DRAMA_ANALYZER && promptOverride === 'extract') {
               const selectedFields = node.data.selectedFields || [];

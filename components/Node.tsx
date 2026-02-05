@@ -3740,8 +3740,10 @@ const NodeComponent: React.FC<NodeProps> = ({
      }
 
      // STORYBOARD_VIDEO_GENERATOR 和 SORA_VIDEO_GENERATOR 在特定状态下始终显示底部操作栏
+     // PROMPT_INPUT 始终显示操作栏（方便编辑文字和生图）
      const isAlwaysOpen = (node.type === NodeType.STORYBOARD_VIDEO_GENERATOR && (node.data as any).status === 'prompting') ||
-                          (node.type === NodeType.SORA_VIDEO_GENERATOR && (node.data as any).taskGroups && (node.data as any).taskGroups.length > 0);
+                          (node.type === NodeType.SORA_VIDEO_GENERATOR && (node.data as any).taskGroups && (node.data as any).taskGroups.length > 0) ||
+                          node.type === NodeType.PROMPT_INPUT;
      const isOpen = isAlwaysOpen || (isHovered || isInputFocused);
 
      // 获取当前画布缩放比例，用于反向缩放底部操作栏以保持按钮可点击
@@ -5296,8 +5298,8 @@ const NodeComponent: React.FC<NodeProps> = ({
                     if (node.type === NodeType.PROMPT_INPUT) {
                         console.log('[Node Render] PROMPT_INPUT node:', node.id, 'isEpisodeChild:', isEpisodeChild, 'inputs:', node.inputs);
                     }
-                    return isEpisodeChild;
-                })() ? (
+                    return { isEpisodeChild, nodeType: node.type };
+                })().isEpisodeChild ? (
                     // Special handling for episode child nodes - only show storyboard button
                     <div className="flex flex-col gap-2 p-2">
                         <button
@@ -5319,6 +5321,100 @@ const NodeComponent: React.FC<NodeProps> = ({
                             <span>拆分为影视分镜</span>
                         </button>
                     </div>
+                ) : node.type === NodeType.PROMPT_INPUT ? (
+                    // PROMPT_INPUT 默认底部面板 - 生图功能
+                    <>
+                    {(() => {
+                        console.log('[Node] Rendering PROMPT_INPUT bottom panel with image generation UI');
+                        return null;
+                    })()}
+                    <div className="flex flex-col gap-3 p-2">
+                        {/* 分辨率选择 */}
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">图片分辨率</span>
+                                <span className="text-[9px] text-amber-400">{node.data.resolution || '512x512'}</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                                {['512x512', '768x768', '1024x1024', '1024x768'].map((res) => (
+                                    <button
+                                        key={res}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onUpdate(node.id, { resolution: res });
+                                        }}
+                                        className={`
+                                            px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all border
+                                            ${(node.data.resolution || '512x512') === res
+                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                                                : 'bg-black/20 border-white/10 text-slate-400 hover:bg-white/5 hover:border-white/20'}
+                                        `}
+                                    >
+                                        {res.replace('x', '×')}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 宽高比选择 */}
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center justify-between px-1">
+                                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">宽高比</span>
+                                <span className="text-[9px] text-amber-400">{node.data.aspectRatio || '1:1'}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {['1:1', '16:9', '9:16'].map((ratio) => (
+                                    <button
+                                        key={ratio}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const [w, h] = ratio.split(':').map(Number);
+                                            let newSize: { width?: number, height?: number } = { height: undefined };
+                                            if (w && h) {
+                                                const currentWidth = node.width || DEFAULT_NODE_WIDTH;
+                                                const projectedHeight = (currentWidth * h) / w;
+                                                if (projectedHeight > 600) newSize.width = (600 * w) / h;
+                                            }
+                                            onUpdate(node.id, { aspectRatio: ratio }, newSize);
+                                        }}
+                                        className={`
+                                            px-2 py-1.5 rounded-lg text-[9px] font-medium transition-all border
+                                            ${(node.data.aspectRatio || '1:1') === ratio
+                                                ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                                                : 'bg-black/20 border-white/10 text-slate-400 hover:bg-white/5 hover:border-white/20'}
+                                        `}
+                                    >
+                                        {ratio}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 生成图片按钮 */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('[PROMPT_INPUT] Generate image button clicked:', {
+                                    nodeId: node.id,
+                                    prompt: node.data.prompt?.substring(0, 50),
+                                    resolution: node.data.resolution,
+                                    aspectRatio: node.data.aspectRatio
+                                });
+                                onAction(node.id, 'generate-image');
+                            }}
+                            disabled={isActionDisabled}
+                            className={`
+                                w-full flex items-center justify-center gap-2 px-4 py-2 rounded-[10px] font-bold text-[10px] tracking-wide transition-all duration-300
+                                ${isWorking
+                                    ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/20 hover:scale-[1.02]'}
+                            `}
+                        >
+                            {isWorking ? <Loader2 className="animate-spin" size={14} /> : <ImageIcon size={14} />}
+                            <span>生成图片</span>
+                        </button>
+                    </div>
+                    </>
                 ) : node.type === NodeType.VIDEO_EDITOR ? (
                     // VIDEO EDITOR NODE
                     <>

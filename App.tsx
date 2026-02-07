@@ -3293,15 +3293,13 @@ export const App = () => {
 
               for (const name of charactersNeedingGeneration) {
                   const config = configs[name] || { method: 'AI_AUTO' };
-                  const existingChar = generatedChars.find(c => c.name === name);
 
-                  // 设置为生成中状态
-                  let charProfile = existingChar;
-                  if (!charProfile) {
-                      charProfile = { id: '', name, status: 'GENERATING' } as any;
-                      newGeneratedChars.push(charProfile!);
+                  // 设置为生成中状态（不可变更新）
+                  const existingIdx = newGeneratedChars.findIndex(c => c.name === name);
+                  if (existingIdx >= 0) {
+                      newGeneratedChars[existingIdx] = { ...newGeneratedChars[existingIdx], status: 'GENERATING' };
                   } else {
-                      charProfile.status = 'GENERATING';
+                      newGeneratedChars.push({ id: '', name, status: 'GENERATING' } as any);
                   }
                   handleNodeUpdate(id, { generatedCharacters: [...newGeneratedChars] });
 
@@ -3311,6 +3309,8 @@ export const App = () => {
                           const idx = newGeneratedChars.findIndex(c => c.name === name);
                           newGeneratedChars[idx] = { ...libChar.data, id: `char-inst-${Date.now()}-${name}`, status: 'SUCCESS' };
                       }
+                      // LIBRARY 分支不走 handleCharacterActionNew，需要手动更新
+                      handleNodeUpdate(id, { generatedCharacters: [...newGeneratedChars] });
                   } else if (config.method === 'SUPPORTING_ROLE') {
                       // SUPPORTING CHARACTER: 只生成基础信息，不生成图片
                       const context = recursiveUpstreamTexts.join('\n');
@@ -3353,6 +3353,8 @@ export const App = () => {
                           const idx = newGeneratedChars.findIndex(c => c.name === name);
                           newGeneratedChars[idx] = { ...newGeneratedChars[idx], status: 'ERROR', error: e.message };
                       }
+                      // SUPPORTING_ROLE 分支不走 handleCharacterActionNew，需要手动更新
+                      handleNodeUpdate(id, { generatedCharacters: [...newGeneratedChars] });
                   } else {
                       // 主角：只生成基础信息，不自动生成表情和三视图
                       // 表情和三视图需要用户额外点击生成
@@ -3373,16 +3375,19 @@ export const App = () => {
 
                           console.log('[CHARACTER_NODE] handleCharacterActionNew returned successfully for:', name);
 
-                          // 更新状态为生成完成
-                          const idx = newGeneratedChars.findIndex(c => c.name === name);
-                          if (idx >= 0) {
-                              const updatedChar = nodesRef.current.find(n => n.id === id)?.data?.generatedCharacters?.find(c => c.name === name);
-                              if (updatedChar) {
-                                  newGeneratedChars[idx] = updatedChar;
-                                  console.log('[CHARACTER_NODE] Updated character from node:', name, 'status:', updatedChar.status);
-                              } else {
-                                  console.warn('[CHARACTER_NODE] Could not find updated character in node:', name);
+                          // 从 nodesRef 获取最新的完整角色列表，同步到 newGeneratedChars
+                          // 这确保了 handleCharacterActionNew 内部通过 updateNodeUI 更新的所有角色数据都被保留
+                          const latestNode = nodesRef.current.find(n => n.id === id);
+                          const latestChars = latestNode?.data?.generatedCharacters || [];
+                          if (latestChars.length > 0) {
+                              // 用最新数据替换 newGeneratedChars 中已有的角色
+                              for (const latestChar of latestChars) {
+                                  const idx = newGeneratedChars.findIndex(c => c.name === latestChar.name);
+                                  if (idx >= 0) {
+                                      newGeneratedChars[idx] = { ...latestChar };
+                                  }
                               }
+                              console.log('[CHARACTER_NODE] Synced all characters from latest node data after:', name);
                           }
 
                           console.log('[CHARACTER_NODE] Profile generation completed for:', name);
@@ -3401,34 +3406,21 @@ export const App = () => {
                       }
                   }
 
-                  // Update after each character is processed (for real-time feedback)
-                  handleNodeUpdate(id, { generatedCharacters: [...newGeneratedChars] });
+                  // handleCharacterActionNew 内部已通过 updateNodeUI 更新了 node.data
+                  // 不再在此处重复调用 handleNodeUpdate，避免用过时数据覆盖
               }
 
-              // Check if any characters were processed
-              const anyProcessed = newGeneratedChars.some(c => c.status === 'GENERATING' || c.status === 'SUCCESS' || c.status === 'ERROR');
-              if (!anyProcessed && names.length > 0) {
-                  // All characters were skipped - they're already in SUCCESS state
-                  console.log('[CHARACTER_NODE] All characters already generated, no action needed');
-                  handleNodeUpdate(id, { generatedCharacters: [...newGeneratedChars] });
-                  setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.SUCCESS } : n));
-              } else if (names.length === 0) {
-                  // No characters to generate
-                  console.log('[CHARACTER_NODE] No characters to generate');
-                  setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.IDLE } : n));
-              } else {
-                  // Characters were processed - check if all completed successfully
-                  const allSuccess = newGeneratedChars.every(c => c.status === 'SUCCESS');
-                  const hasError = newGeneratedChars.some(c => c.status === 'ERROR');
-
-                  if (allSuccess) {
-                      console.log('[CHARACTER_NODE] All characters generated successfully');
-                      setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.SUCCESS } : n));
-                  } else if (hasError) {
-                      console.log('[CHARACTER_NODE] Some characters failed to generate');
-                      setNodes(p => p.map(n => n.id === id ? { ...n, status: NodeStatus.ERROR } : n));
-                  }
-              }
+              // 从最新的 node state 判断最终状态，避免使用过时的 newGeneratedChars
+              setNodes(p => p.map(n => {
+                  if (n.id !== id) return n;
+                  const chars = n.data.generatedCharacters || [];
+                  if (chars.length === 0) return { ...n, status: NodeStatus.IDLE };
+                  const allDone = chars.every(c => c.status === 'SUCCESS' || c.status === 'IDLE');
+                  const hasError = chars.some(c => c.status === 'ERROR');
+                  if (allDone) return { ...n, status: NodeStatus.SUCCESS };
+                  if (hasError) return { ...n, status: NodeStatus.ERROR };
+                  return { ...n, status: NodeStatus.SUCCESS };
+              }));
 
           } else if (node.type === NodeType.STYLE_PRESET) {
               // --- Style Preset Generation Logic ---
